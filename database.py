@@ -10,11 +10,36 @@ CREATE TABLE IF NOT EXISTS candidates (
     email TEXT,
     skills TEXT,
     experience INTEGER,
-    test_score INTEGER
+    test_score INTEGER,
+    hiring_score REAL
+)
+""")
+
+
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS candidate_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    resume_path TEXT,
+    experience INTEGER,
+    test_score INTEGER,
+    skill_score INTEGER,
+    hiring_score REAL
 )
 """)
 
 conn.commit()
 conn.close()
 
-print("Database created successfully")
+print("Users table created successfully")
