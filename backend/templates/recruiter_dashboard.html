@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends "base.html" %}
+{% block content %}
+
+    <h1>AI Interview Platform</h1>
+    <hr>
+    <h2>Recruiter Dashboard</h2>
+
+    {% for c in candidates %}
+    <p>
+        {{ c[0] }} | Score: {{ c[1] }} | Status: {{ c[2] }}
+    </p>
+    {% endfor %}
+    {% endblock %}
+
+</body>
+
+</html>

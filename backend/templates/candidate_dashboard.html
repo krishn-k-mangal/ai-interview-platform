@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+
+    <h1>Candidate Dashboard</h1>
+
+    <hr>
+
+    <a href="/upload_resume_page">
+        <button>Upload Resume</button>
+    </a>
+
+    <br><br>
+
+    {% if profile %}
+    <a href="/test_page">
+        <button>Take Test</button>
+    </a>
+    {% else %}
+    <p>Please upload resume first</p>
+    {% endif %}
+
+    <br><br>
+
+    <a href="/logout">
+        <button>Logout</button>
+    </a>
+
+    {% endblock %}
+</body>
+
+</html>

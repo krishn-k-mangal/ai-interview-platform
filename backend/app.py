@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify
+from flask import render_template, redirect, url_for
+from flask import session
 from resume_parser import extract_text_from_pdf , extract_skills
 import sqlite3 
 import pickle
@@ -9,11 +11,142 @@ from flask_cors import CORS
 
 
 app = Flask(__name__)
+app.secret_key = "secret123"
 
-CORS(app)
 @app.route("/")
-def home():
-    return "AI Interview Platform Running"
+def login_page():
+    return render_template("login.html")
+
+@app.route("/register_page")
+def register_page():
+    return render_template("register.html")
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.form
+
+    name = data["name"]
+    email = data["email"]
+    password = data["password"]
+    role = data["role"]
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO users (name, email, password, role)
+        VALUES (?, ?, ?, ?)
+    """, (name, email, password, role))
+
+    conn.commit()
+    conn.close()
+    if not email or not password:
+        return "All fields required"
+    return redirect("/login_page")
+
+@app.route("/login_page")
+def login_page1():
+    return render_template("login.html")
+
+@app.route("/login", methods=["POST"])
+def login():
+
+    data = request.form
+
+    email = data["email"]
+    password = data["password"]
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, name, role FROM users WHERE email=? AND password=?",
+        (email, password)
+    )
+
+    user = cursor.fetchone()
+    conn.close()
+    if not email or not password:
+        return "All fields required"    
+    if user:
+        session["user_id"] = user[0]   # ✅ store user
+        session["role"] = user[2]
+
+        if user[2] == "recruiter":
+            return redirect("/recruiter_dashboard")
+        else:
+            return redirect("/candidate_dashboard")
+    else:
+        return "Invalid login"
+
+@app.route("/recruiter_dashboard")
+def recruiter_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT users.name, candidate_profiles.hiring_score, candidate_profiles.status
+        FROM candidate_profiles
+        JOIN users ON users.id = candidate_profiles.user_id
+        ORDER BY hiring_score DESC
+    """)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return render_template("recruiter_dashboard.html", candidates=rows)
+
+
+@app.route("/candidate_dashboard")
+def candidate_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (session["user_id"],))
+    profile = cursor.fetchone()
+
+    conn.close()
+
+    return render_template("candidate_dashboard.html", profile=profile)
+
+@app.route("/upload_resume_page")
+def upload_resume_page():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    return render_template("upload_resume.html")
+
+@app.route("/test_page")
+def test_page():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    # 🔥 Fetch questions
+    cursor.execute("""
+        SELECT id, question, option1, option2, option3, option4 
+        FROM questions
+    """)
+
+    questions = cursor.fetchall()   # ✅ NOW it exists
+
+    conn.close()
+    
+    return render_template("test.html", questions=questions)
+
+    
 
 @app.route("/add_candidate", methods=["POST"])
 def add_candidate():
@@ -79,103 +212,70 @@ def get_candidates():
 @app.route("/upload_resume", methods=["POST"])
 def upload_resume():
 
+    if "user_id" not in session:
+        return redirect("/login_page")
+
     if "resume" not in request.files:
-        return {"error": "No resume file uploaded"}, 400
+        return "No resume uploaded"
 
     file = request.files["resume"]
 
+    if file.filename == "":
+        return "No file selected"
+
+    filename = file.filename
+
+    if not filename.lower().endswith(".pdf"):
+        return "Only PDF files are allowed"
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
     upload_folder = os.path.join(base_dir, "uploads")
-
-    # ensure folder exists
     os.makedirs(upload_folder, exist_ok=True)
 
-    # full file path INCLUDING filename
-    filepath = os.path.join(upload_folder, file.filename)
-
-    print("Saving file to:", filepath)   # debug line
+    filepath = os.path.join(upload_folder, filename)
 
     file.save(filepath)
 
-    from resume_parser import extract_text_from_pdf, extract_skills
-
-    
-    text = extract_text_from_pdf(filepath)
-
-    skills = extract_skills(text)
+    # Extract data safely
+    try:
+        text = extract_text_from_pdf(filepath)
+        skills = extract_skills(text)
+    except Exception:
+        return "Invalid PDF file. Please upload a valid resume."
 
     skill_score = len(skills) * 10
-    experience = 2   # temporary value
-    test_score = 75  # temporary value
+    experience = 2
+    test_score = 0
 
-    features = np.array([[experience, test_score, skill_score]])
-
-    hiring_score = model.predict(features)[0]
-
-    return {
-        "message": "Resume uploaded successfully",
-        "skills_detected": skills,
-        "skill_score": skill_score,
-        "hiring_score": float(hiring_score),
-        "resume_preview": text[:200]
-    }
-
-
-@app.route("/register", methods=["POST"])
-def register():
-
-    data = request.json
-
-    name = data["name"]
-    email = data["email"]
-    password = data["password"]
-    role = data["role"]
+    user_id = session["user_id"]
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO users (name, email, password, role)
-        VALUES (?, ?, ?, ?)
-    """, (name, email, password, role))
+    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (user_id,))
+    existing = cursor.fetchone()
+
+    if existing:
+        cursor.execute("""
+            UPDATE candidate_profiles
+            SET resume_path=?, skill_score=?, experience=?
+            WHERE user_id=?
+        """, (filepath, skill_score, experience, user_id))
+    else:
+        cursor.execute("""
+            INSERT INTO candidate_profiles
+            (user_id, resume_path, experience, test_score, skill_score, hiring_score)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (user_id, filepath, experience, test_score, skill_score, 0))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"message": "User registered successfully"})
-
-
-@app.route("/login", methods=["POST"])
-def login():
-
-    data = request.json
-
-    email = data["email"]
-    password = data["password"]
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT id, name, role FROM users WHERE email=? AND password=?",
-        (email, password)
+    return render_template(
+    "resume_result.html",
+    skills=skills,
+    skill_score=skill_score
     )
-
-    user = cursor.fetchone()
-
-    conn.close()
-
-    if user:
-        return jsonify({
-            "message": "Login successful",
-            "user_id": user[0],
-            "name": user[1],
-            "role": user[2]
-        })
-
-    else:
-        return jsonify({"message": "Invalid email or password"}), 401
-
 @app.route("/evaluate_candidate", methods=["POST"])
 def evaluate_candidate():
 
@@ -400,24 +500,62 @@ def get_questions():
 @app.route("/submit_test", methods=["POST"])
 def submit_test():
 
-    data = request.json
-    answers = data["answers"]  # {question_id: selected_option}
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    data = request.form
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     score = 0
 
-    for q_id, answer in answers.items():
+    for q_id, answer in data.items():
         cursor.execute("SELECT correct_answer FROM questions WHERE id=?", (q_id,))
         correct = cursor.fetchone()[0]
 
         if answer == correct:
             score += 10
 
+    # 👉 TEMP user_id = 1 (later dynamic)
+    # user_id = 1  
+    user_id = session.get("user_id")
+
+    # Get skill_score + experience
+    cursor.execute("""
+        SELECT experience, skill_score
+        FROM candidate_profiles
+        WHERE user_id=?
+    """, (user_id,))
+
+    row = cursor.fetchone()
+    if row is None:
+        return "Please upload resume first"
+    experience = row[0]
+    skill_score = row[1]
+
+    # ML prediction
+    features = np.array([[experience, score, skill_score]])
+    hiring_score = model.predict(features)[0]
+
+    # Update DB
+    cursor.execute("""
+        UPDATE candidate_profiles
+        SET test_score=?, hiring_score=?
+        WHERE user_id=?
+    """, (score, hiring_score, user_id))
+   
+    conn.commit()
     conn.close()
 
-    return jsonify({"test_score": score})
+    return render_template("result.html", score=score, hiring_score=round(hiring_score,2))
+
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login_page")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "scoring_model.pkl")

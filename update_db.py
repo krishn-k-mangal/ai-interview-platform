@@ -12,11 +12,13 @@ cursor = conn.cursor()
 
 # print("Status updated")
 
-import sqlite3
+# import sqlite3
 
 
 
 
-cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
-cursor.execute("DELETE FROM sqlite_sequence WHERE name='candidate_profiles'")
+# cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
+# cursor.execute("DELETE FROM sqlite_sequence WHERE name='candidate_profiles'")
+
+
 conn.close()

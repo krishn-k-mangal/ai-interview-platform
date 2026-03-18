@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends "base.html" %}
+    {% block content %}
+
+
+    <h1>AI Interview Platform</h1>
+    <hr>
+    <form method="POST" action="/register">
+        Name: <input name="name"><br><br>
+        Email: <input name="email"><br><br>
+        Password: <input name="password"><br><br>
+
+        <select name="role">
+            <option value="candidate">Candidate</option>
+            <option value="recruiter">Recruiter</option>
+        </select><br><br>
+
+        <button type="submit">Register</button>
+    </form>
+    
+    {% endblock %}
+</body>
+
+</html>
