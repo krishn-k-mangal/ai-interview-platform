@@ -1,1 +1,1 @@
-get_candidates
+shortlisted_candidates

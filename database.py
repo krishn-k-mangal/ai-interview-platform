@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS candidate_profiles (
 )
 """)
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT,
+    option1 TEXT,
+    option2 TEXT,
+    option3 TEXT,
+    option4 TEXT,
+    correct_answer TEXT
+)
+""")
+
 conn.commit()
 conn.close()
 

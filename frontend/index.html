@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Interview Platform</title>
+</head>
+<body>
+
+<h2>Register User</h2>
+
+<input id="name" placeholder="Name"><br><br>
+<input id="email" placeholder="Email"><br><br>
+<input id="password" placeholder="Password"><br><br>
+<select id="role">
+    <option value="candidate">Candidate</option>
+    <option value="recruiter">Recruiter</option>
+</select><br><br>
+
+<button onclick="register()">Register</button>
+
+<hr>
+
+<h2>View Candidates</h2>
+<button onclick="getCandidates()">Load Candidates</button>
+
+<ul id="candidateList"></ul>
+
+<script>
+function getCandidates() {
+    fetch("http://127.0.0.1:5000/evaluated_candidates")
+    .then(res => res.json())
+    .then(data => {
+
+        console.log("DATA:", data);  // DEBUG
+
+        let list = document.getElementById("candidateList");
+        list.innerHTML = "";
+
+        if (data.length === 0) {
+            list.innerHTML = "<li>No candidates found</li>";
+            return;
+        }
+
+        data.forEach(c => {
+            let item = document.createElement("li");
+
+            item.innerHTML = `
+                ${c.name} | Score: ${c.hiring_score} | Status: ${c.status}
+                <button onclick="updateStatus(${c.user_id}, 'shortlisted')">Shortlist</button>
+                <button onclick="updateStatus(${c.user_id}, 'rejected')">Reject</button>
+            `;
+
+            list.appendChild(item);
+        });
+    })
+    .catch(err => console.error("ERROR:", err));
+}
+
+function updateStatus(user_id, status) {
+console.log("Clicked:", user_id, status);
+    fetch("http://127.0.0.1:5000/update_status", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            user_id: user_id,
+            status: status
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        getCandidates();
+    });
+}
+</script>
+</body>
+</html>
