@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+
+    <h2>Scoring Settings</h2>
+
+    <form method="POST" action="/update_settings">
+
+        Skill Weight: <input name="skill" value="{{ settings[1] }}"><br><br>
+        Test Weight: <input name="test" value="{{ settings[2] }}"><br><br>
+        Experience Weight: <input name="exp" value="{{ settings[3] }}"><br><br>
+
+        <button type="submit">Update</button>
+
+    </form>
+
+    {% endblock %}
+</body>
+
+</html>

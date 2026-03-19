@@ -50,7 +50,14 @@ CREATE TABLE IF NOT EXISTS questions (
     correct_answer TEXT
 )
 """)
-
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS recruiter_settings (
+    id INTEGER PRIMARY KEY,
+    skill_weight REAL,
+    test_weight REAL,
+    experience_weight REAL
+)
+""")
 conn.commit()
 conn.close()
 

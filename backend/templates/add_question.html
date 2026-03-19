@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Add Question</h2>
+
+<form method="POST" action="/add_question">
+    Question: <input name="question"><br><br>
+    Option 1: <input name="o1"><br>
+    Option 2: <input name="o2"><br>
+    Option 3: <input name="o3"><br>
+    Option 4: <input name="o4"><br><br>
+    Correct Answer: <input name="answer"><br><br>
+
+    <button type="submit">Add</button>
+</form>
+
+{% endblock %}

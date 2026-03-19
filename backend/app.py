@@ -23,27 +23,27 @@ def register_page():
 
 @app.route("/register", methods=["POST"])
 def register():
+
     data = request.form
 
-    name = data["name"]
-    email = data["email"]
-    password = data["password"]
-    role = data["role"]
-
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("database.db", timeout=10)
     cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO users (name, email, password, role)
-        VALUES (?, ?, ?, ?)
-    """, (name, email, password, role))
+    try:
+        cursor.execute("""
+            INSERT INTO users (name, email, password, role)
+            VALUES (?, ?, ?, ?)
+        """, (data["name"], data["email"], data["password"], data["role"]))
 
-    conn.commit()
-    conn.close()
-    if not email or not password:
-        return "All fields required"
+        conn.commit()
+
+    except Exception as e:
+        return str(e)
+
+    finally:
+        conn.close()
+
     return redirect("/login_page")
-
 @app.route("/login_page")
 def login_page1():
     return render_template("login.html")
@@ -85,27 +85,49 @@ def recruiter_dashboard():
     if "user_id" not in session:
         return redirect("/login_page")
 
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT users.name, candidate_profiles.hiring_score, candidate_profiles.status
+    # 🔥 GET filter from URL
+    min_score = request.args.get("min_score")
+
+    # Base query
+    query = """
+        SELECT users.name,
+               candidate_profiles.hiring_score,
+               candidate_profiles.test_score,
+               candidate_profiles.skill_score,
+               candidate_profiles.status,
+               candidate_profiles.user_id
         FROM candidate_profiles
         JOIN users ON users.id = candidate_profiles.user_id
-        ORDER BY hiring_score DESC
-    """)
+    """
 
-    rows = cursor.fetchall()
+    # Apply filter if exists
+    if min_score:
+        query += " WHERE candidate_profiles.hiring_score >= ?"
+        cursor.execute(query, (min_score,))
+    else:
+        cursor.execute(query)
+
+    # Always sort
+    candidates = cursor.fetchall()
+
     conn.close()
 
-    return render_template("recruiter_dashboard.html", candidates=rows)
-
-
+    return render_template("recruiter_dashboard.html", candidates=candidates)
+    
 @app.route("/candidate_dashboard")
 def candidate_dashboard():
 
     if "user_id" not in session:
         return redirect("/login_page")
+
+    if session.get("role") != "candidate":
+        return "Access Denied"
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -123,7 +145,11 @@ def upload_resume_page():
     if "user_id" not in session:
         return redirect("/login_page")
 
+    if session.get("role") != "candidate":
+        return "Access Denied"
+
     return render_template("upload_resume.html")
+
 
 @app.route("/test_page")
 def test_page():
@@ -247,6 +273,13 @@ def upload_resume():
     experience = 2
     test_score = 0
 
+    weighted_score = (
+    skill_score * 0.7 +
+    experience * 10 * 0.3
+    )
+
+    hiring_score = weighted_score
+
     user_id = session["user_id"]
 
     conn = sqlite3.connect("database.db")
@@ -258,15 +291,15 @@ def upload_resume():
     if existing:
         cursor.execute("""
             UPDATE candidate_profiles
-            SET resume_path=?, skill_score=?, experience=?
+            SET resume_path=?, skill_score=?, experience=?, hiring_score=?
             WHERE user_id=?
-        """, (filepath, skill_score, experience, user_id))
+        """, (filepath, skill_score, experience, hiring_score, user_id))
     else:
         cursor.execute("""
             INSERT INTO candidate_profiles
             (user_id, resume_path, experience, test_score, skill_score, hiring_score)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (user_id, filepath, experience, test_score, skill_score, 0))
+        """, (user_id, filepath, experience, test_score, skill_score, hiring_score))
 
     conn.commit()
     conn.close()
@@ -276,6 +309,7 @@ def upload_resume():
     skills=skills,
     skill_score=skill_score
     )
+
 @app.route("/evaluate_candidate", methods=["POST"])
 def evaluate_candidate():
 
@@ -452,28 +486,25 @@ def get_shortlisted_candidates():
     print(rows)
     return jsonify(candidates)
 
-@app.route("/update_status", methods=["POST"])
-def update_status():
+@app.route("/update_status/<int:user_id>/<status>")
+def update_status(user_id, status):
 
-    data = request.json
-
-    user_id = data["user_id"]
-    status = data["status"]
+    if session.get("role") != "recruiter":
+        return "Access Denied"
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE candidate_profiles
-        SET status = ?
-        WHERE user_id = ?
+        SET status=?
+        WHERE user_id=?
     """, (status, user_id))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"message": f"Candidate {status} successfully"})
-
+    return redirect("/recruiter_dashboard")
 
 @app.route("/questions", methods=["GET"])
 def get_questions():
@@ -500,16 +531,21 @@ def get_questions():
 @app.route("/submit_test", methods=["POST"])
 def submit_test():
 
+    # 🔐 Auth check
     if "user_id" not in session:
         return redirect("/login_page")
 
+    if session.get("role") != "candidate":
+        return "Access Denied"
+
+    user_id = session.get("user_id")
     data = request.form
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
+    # 🧠 Calculate test score
     score = 0
-
     for q_id, answer in data.items():
         cursor.execute("SELECT correct_answer FROM questions WHERE id=?", (q_id,))
         correct = cursor.fetchone()[0]
@@ -517,40 +553,122 @@ def submit_test():
         if answer == correct:
             score += 10
 
-    # 👉 TEMP user_id = 1 (later dynamic)
-    # user_id = 1  
-    user_id = session.get("user_id")
-
-    # Get skill_score + experience
+    # 📊 Get candidate profile
     cursor.execute("""
         SELECT experience, skill_score
         FROM candidate_profiles
         WHERE user_id=?
     """, (user_id,))
-
+    
     row = cursor.fetchone()
+
     if row is None:
         return "Please upload resume first"
-    experience = row[0]
-    skill_score = row[1]
 
-    # ML prediction
-    features = np.array([[experience, score, skill_score]])
-    hiring_score = model.predict(features)[0]
+    experience, skill_score = row
 
-    # Update DB
+    # ⚙️ Get recruiter weights
+    cursor.execute("""
+        SELECT skill_weight, test_weight, experience_weight
+        FROM recruiter_settings
+        LIMIT 1
+    """)
+
+    weights = cursor.fetchone()
+
+    if weights is None:
+        skill_w, test_w, exp_w = 0.5, 0.3, 0.2
+    else:
+        skill_w, test_w, exp_w = weights
+
+    # 🧮 Final scoring logic
+    hiring_score = (
+        skill_score * skill_w +
+        score * test_w +
+        experience * 10 * exp_w
+    )
+
+    # 💾 Update DB
     cursor.execute("""
         UPDATE candidate_profiles
         SET test_score=?, hiring_score=?
         WHERE user_id=?
     """, (score, hiring_score, user_id))
-   
+
     conn.commit()
     conn.close()
 
-    return render_template("result.html", score=score, hiring_score=round(hiring_score,2))
+    # 📄 Show result
+    return render_template(
+        "result.html",
+        score=score,
+        hiring_score=round(hiring_score, 2)
+    )
+@app.route("/add_question_page")
+def add_question_page():
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+    return render_template("add_question.html")
 
+@app.route("/add_question", methods=["POST"])
+def add_question():
 
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
+    data = request.form
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO questions 
+        (question, option1, option2, option3, option4, correct_answer)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (data["question"], data["o1"], data["o2"], data["o3"], data["o4"], data["answer"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/recruiter_dashboard")
+
+@app.route("/settings_page")
+def settings_page():
+
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM recruiter_settings LIMIT 1")
+    settings = cursor.fetchone()
+
+    conn.close()
+
+    return render_template("settings.html", settings=settings)
+
+@app.route("/update_settings", methods=["POST"])
+def update_settings():
+
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
+    data = request.form
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE recruiter_settings
+        SET skill_weight=?, test_weight=?, experience_weight=?
+        WHERE id=1
+    """, (data["skill"], data["test"], data["exp"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/recruiter_dashboard")
 
 @app.route("/logout")
 def logout():
