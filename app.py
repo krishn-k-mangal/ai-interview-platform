@@ -6,7 +6,7 @@ import sqlite3
 import pickle
 import numpy as np
 import os
-from flask_cors import CORS
+
 
 def calculate_match(candidate_skills, job_skills):
 
