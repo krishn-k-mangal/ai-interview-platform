@@ -14,22 +14,29 @@
 
     <h2>Recruiter Dashboard</h2>
     <div style="margin-top:20px;">
-    <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px;">
 
-        <div style="background:#007bff; color:white; padding:20px; border-radius:10px; width:150px; text-align:center;">
-            <b>Total</b><br><br>
-            {{ total }}
+            <div style="background:#007bff;color:white;padding:20px;border-radius:10px;width:160px;text-align:center;">
+                <b>Total</b><br><br>{{ total }}
+            </div>
+
+            <div style="background:#28a745;color:white;padding:20px;border-radius:10px;width:160px;text-align:center;">
+                <b>Shortlisted</b><br><br>{{ shortlisted }}
+            </div>
+
+            <div style="background:#dc3545;color:white;padding:20px;border-radius:10px;width:160px;text-align:center;">
+                <b>Rejected</b><br><br>{{ rejected }}
+            </div>
+
+            <div style="background:#6c757d;color:white;padding:20px;border-radius:10px;width:160px;text-align:center;">
+                <b>Avg Score</b><br><br>{{ avg_score }}
+            </div>
+
         </div>
 
-        <div style="background:#28a745; color:white; padding:20px; border-radius:10px; width:150px; text-align:center;">
-            <b>Shortlisted</b><br><br>
-            {{ shortlisted }}
-        </div>
-
-        <div style="background:#dc3545; color:white; padding:20px; border-radius:10px; width:150px; text-align:center;">
-            <b>Rejected</b><br><br>
-            {{ rejected }}
-        </div>
+        <h3 style="text-align:center; color:#28a745;">
+            Top Candidate: {{ top_candidate }}
+        </h3>
 
     </div>
     <form method="GET" action="/recruiter_dashboard">
@@ -39,8 +46,10 @@
     <table border="1" cellpadding="10">
 
         <tr>
+            <th>Rank</th>
             <th>Name</th>
             <th>Score</th>
+            <th>Match %</th>
             <th>Test</th>
             <th>Skills</th>
             <th>Status</th>
@@ -48,25 +57,51 @@
         </tr>
 
         {% for c in candidates %}
-        <tr>
-            <td>{{ c[0] }}</td>
-            <td>{{ "%.2f"|format(c[1]) }}</td>
-            <td>{{ c[2] }}</td>
-            <td>{{ c[3] }}</td>
-            <td>{{ c[4] }}</td>
+
+        <tr style="{% if c[0] == 1 %}background:#d4edda;{% endif %}">
+
+            <td>{{ c[0] }}</td> <!-- Rank -->
             <td>
-                <a href="/update_status/{{ c[5] }}/shortlisted">
-                    <button style="padding:8px 14px; border-radius:6px; background:#28a745;">Shortlist</button>
+                <a href="/candidate/{{ c[7] }}">
+                    {{ c[1] }}
+                </a>
+            </td> <!-- Name -->
+            <td>{{ "%.2f"|format(c[2]) }}</td> <!-- Score -->
+            <td>{{ c[3] }}%</td> <!-- Match -->
+            <td>{{ c[4] }}</td> <!-- Test -->
+            <td>{{ c[5] }}</td> <!-- Skills -->
+            <td>{{ c[6] }}</td> <!-- Status -->
+
+            <td>
+                <a href="/update_status/{{ c[7] }}/shortlisted">
+                    <button style="background:#28a745;">Shortlist</button>
                 </a>
 
-                <a href="/update_status/{{ c[5] }}/rejected">
-                    <button style="padding:8px 14px; border-radius:6px ;background:#dc3545;">Reject</button>
+                <a href="/update_status/{{ c[7] }}/rejected">
+                    <button style="background:#dc3545;">Reject</button>
                 </a>
             </td>
+
         </tr>
         {% endfor %}
 
     </table>
+    <div style="margin-top:20px; text-align:center;">
+
+        {% if page > 1 %}
+        <a href="/recruiter_dashboard?page={{ page-1 }}">
+            <button>Previous</button>
+        </a>
+        {% endif %}
+
+        Page {{ page }}
+
+        {% if page < total_pages %} <a href="/recruiter_dashboard?page={{ page+1 }}">
+            <button>Next</button>
+            </a>
+            {% endif %}
+
+    </div>
     </div>
 
     {% endblock %}

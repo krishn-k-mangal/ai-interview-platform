@@ -8,7 +8,25 @@ import numpy as np
 import os
 from flask_cors import CORS
 
+def calculate_match(candidate_skills, job_skills):
 
+    cand = set([s.strip().lower() for s in candidate_skills.split(",")])
+    job = set([s.strip().lower() for s in job_skills.split(",")])
+
+    common = cand.intersection(job)
+
+    if len(job) == 0:
+        return 0
+
+    # main match
+    base_score = (len(common) / len(job)) * 100
+
+    # bonus for extra skills
+    bonus = (len(common) / len(cand)) * 30 if len(cand) > 0 else 0
+
+    final_score = base_score * 0.7 + bonus * 0.3
+
+    return round(final_score, 2)
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -44,6 +62,7 @@ def register():
         conn.close()
 
     return redirect("/login_page")
+
 @app.route("/login_page")
 def login_page1():
     return render_template("login.html")
@@ -79,6 +98,8 @@ def login():
     else:
         return "Invalid login"
 
+import math
+
 @app.route("/recruiter_dashboard")
 def recruiter_dashboard():
 
@@ -91,10 +112,9 @@ def recruiter_dashboard():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    # 🔥 GET filter from URL
+    # 🔥 Filter
     min_score = request.args.get("min_score")
 
-    # Base query
     query = """
         SELECT users.name,
                candidate_profiles.hiring_score,
@@ -106,20 +126,75 @@ def recruiter_dashboard():
         JOIN users ON users.id = candidate_profiles.user_id
     """
 
-    # Apply filter if exists
     if min_score:
         query += " WHERE candidate_profiles.hiring_score >= ?"
         cursor.execute(query, (min_score,))
     else:
         cursor.execute(query)
 
-    # Always sort
     candidates = cursor.fetchall()
+    candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+
+    # 🔥 Job matching
+    cursor.execute("SELECT skills FROM jobs ORDER BY id DESC LIMIT 1")
+    job = cursor.fetchone()
+    job_skills = job[0] if job else ""
+
+    enhanced_candidates = []
+    rank = 1
+
+    for row in candidates:
+        name, hiring_score, test, skill_score, status, user_id = row
+
+        cursor.execute("SELECT skills FROM candidates WHERE name=?", (name,))
+        cand = cursor.fetchone()
+        cand_skills = cand[0] if cand else ""
+
+        match_score = calculate_match(cand_skills, job_skills)
+
+        enhanced_candidates.append(
+            (rank, name, hiring_score, match_score, test, skill_score, status, user_id)
+        )
+        rank += 1
 
     conn.close()
 
-    return render_template("recruiter_dashboard.html", candidates=candidates)
-    
+    # 🔥 Analytics
+    total = len(enhanced_candidates)
+
+    shortlisted = sum(1 for c in enhanced_candidates if c[6] == "shortlisted")
+    rejected = sum(1 for c in enhanced_candidates if c[6] == "rejected")
+
+    avg_score = round(
+        sum(c[2] for c in enhanced_candidates) / total, 2
+    ) if total > 0 else 0
+
+    top_candidate = enhanced_candidates[0][1] if total > 0 else "None"
+
+    # 🔥 Pagination
+    page = request.args.get("page", 1, type=int)
+    per_page = 5
+
+    total_pages = math.ceil(total / per_page)
+
+    start = (page - 1) * per_page
+    end = start + per_page
+
+    paginated_candidates = enhanced_candidates[start:end]
+
+    return render_template(
+        "recruiter_dashboard.html",
+        candidates=paginated_candidates,   # ✅ FIX
+        total=total,
+        shortlisted=shortlisted,
+        rejected=rejected,
+        avg_score=avg_score,
+        top_candidate=top_candidate,
+        page=page,
+        total_pages=total_pages
+    )
+
+
 @app.route("/candidate_dashboard")
 def candidate_dashboard():
 
@@ -207,6 +282,33 @@ def add_candidate():
         "hiring_score": float(hiring_score)
     })
 
+@app.route("/candidate/<int:user_id>")
+def candidate_profile(user_id):
+
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT users.name,
+               candidate_profiles.experience,
+               candidate_profiles.test_score,
+               candidate_profiles.skill_score,
+               candidate_profiles.hiring_score,
+               candidate_profiles.status,
+               candidate_profiles.resume_path
+        FROM candidate_profiles
+        JOIN users ON users.id = candidate_profiles.user_id
+        WHERE users.id=?
+    """, (user_id,))
+
+    candidate = cursor.fetchone()
+
+    conn.close()
+
+    return render_template("candidate_profile.html", candidate=candidate)
 
 @app.route("/candidates", methods=["GET"])
 def get_candidates():
@@ -583,10 +685,10 @@ def submit_test():
 
     # 🧮 Final scoring logic
     hiring_score = (
-        skill_score * skill_w +
-        score * test_w +
-        experience * 10 * exp_w
-    )
+        (skill_score / 100) * skill_w +
+        (test_score / 100) * test_w +
+        (experience / 10) * exp_w    
+    ) * 100
 
     # 💾 Update DB
     cursor.execute("""
@@ -604,6 +706,7 @@ def submit_test():
         score=score,
         hiring_score=round(hiring_score, 2)
     )
+
 @app.route("/add_question_page")
 def add_question_page():
     if session.get("role") != "recruiter":
@@ -670,6 +773,34 @@ def update_settings():
 
     return redirect("/recruiter_dashboard")
 
+
+@app.route("/add_job_page")
+def add_job_page():
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+    return render_template("add_job.html")
+
+@app.route("/add_job", methods=["POST"])
+def add_job():
+
+    if session.get("role") != "recruiter":
+        return "Access Denied"
+
+    data = request.form
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO jobs (title, description, skills)
+        VALUES (?, ?, ?)
+    """, (data["title"], data["desc"], data["skills"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/recruiter_dashboard")
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -682,5 +813,7 @@ model = pickle.load(open(MODEL_PATH, "rb"))
 
 
 
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    {% extends "base.html" %}
+
+    {% block content %}
+
+    <h2>Candidate Profile</h2>
+
+    <hr>
+
+    <p><b>Name:</b> {{ candidate[0] }}</p>
+    <p><b>Experience:</b> {{ candidate[1] }}</p>
+    <p><b>Test Score:</b> {{ candidate[2] }}</p>
+    <p><b>Skill Score:</b> {{ candidate[3] }}</p>
+    <p><b>Hiring Score:</b> {{ "%.2f"|format(candidate[4]) }}</p>
+    <p><b>Status:</b> {{ candidate[5] }}</p>
+
+    <hr>
+
+    <p><b>Resume File:</b></p>
+    <a href="{{ candidate[6] }}" target="_blank">View Resume</a>
+
+    <br><br>
+
+    <a href="/recruiter_dashboard">
+        <button>Back</button>
+    </a>
+
+    {% endblock %}
+</body>
+
+</html>

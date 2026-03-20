@@ -58,6 +58,17 @@ CREATE TABLE IF NOT EXISTS recruiter_settings (
     experience_weight REAL
 )
 """)
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    description TEXT,
+    skills TEXT
+)
+""")
+
+
 conn.commit()
 conn.close()
 
