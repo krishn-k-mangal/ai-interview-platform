@@ -110,6 +110,8 @@ def candidate_dashboard():
     if "user_id" not in session:
         return redirect("/login_page")
 
+    user_id = session["user_id"] 
+
     if session.get("role") != "candidate":
         return "Access Denied"
 
