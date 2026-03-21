@@ -110,19 +110,13 @@ def candidate_dashboard():
     if "user_id" not in session:
         return redirect("/login_page")
 
-    user_id = session["user_id"] 
-
-    if session.get("role") != "candidate":
-        return "Access Denied"
+    user_id = session["user_id"]
 
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (session["user_id"],))
-    profile = cursor.fetchone()
-
     cursor.execute("""
-        SELECT skill_score, experience
+        SELECT skill_score, test_score, hiring_score
         FROM candidate_profiles
         WHERE user_id=?
     """, (user_id,))
@@ -130,16 +124,15 @@ def candidate_dashboard():
     row = cursor.fetchone()
 
     if row:
-        skill_score, experience = row
+        skill_score, test_score, hiring_score = row
     else:
-        skill_score, experience = 0, 0
-
-    conn.close()
+        skill_score, test_score, hiring_score = 0, 0, 0
 
     return render_template(
         "candidate_dashboard.html",
         skill_score=skill_score,
-        experience=experience
+        test_score=test_score,
+        hiring_score=hiring_score
     )
 
 @app.route("/upload_resume_page")
