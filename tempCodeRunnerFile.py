@@ -1,1 +1,1 @@
-shortlisted_candidates
+test_score

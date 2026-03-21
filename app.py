@@ -7,6 +7,8 @@ import pickle
 import numpy as np
 import os
 
+def get_db():
+    return sqlite3.connect("database.db")
 
 def calculate_match(candidate_skills, job_skills):
 
@@ -99,6 +101,61 @@ def login():
         return "Invalid login"
 
 import math
+
+
+
+@app.route("/candidate_dashboard")
+def candidate_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    if session.get("role") != "candidate":
+        return "Access Denied"
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (session["user_id"],))
+    profile = cursor.fetchone()
+
+    conn.close()
+
+    return render_template("candidate_dashboard.html", profile=profile)
+
+@app.route("/upload_resume_page")
+def upload_resume_page():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    if session.get("role") != "candidate":
+        return "Access Denied"
+
+    return render_template("upload_resume.html")
+
+
+
+@app.route("/test_page")
+def test_page():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+
+    # 🔥 Fetch questions
+    cursor.execute("""
+        SELECT id, question, option1, option2, option3, option4 
+        FROM questions
+    """)
+
+    questions = cursor.fetchall()   # ✅ NOW it exists
+
+    conn.close()
+    
+    return render_template("test.html", questions=questions)
 
 @app.route("/recruiter_dashboard")
 def recruiter_dashboard():
@@ -193,61 +250,7 @@ def recruiter_dashboard():
         page=page,
         total_pages=total_pages
     )
-
-
-@app.route("/candidate_dashboard")
-def candidate_dashboard():
-
-    if "user_id" not in session:
-        return redirect("/login_page")
-
-    if session.get("role") != "candidate":
-        return "Access Denied"
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (session["user_id"],))
-    profile = cursor.fetchone()
-
-    conn.close()
-
-    return render_template("candidate_dashboard.html", profile=profile)
-
-@app.route("/upload_resume_page")
-def upload_resume_page():
-
-    if "user_id" not in session:
-        return redirect("/login_page")
-
-    if session.get("role") != "candidate":
-        return "Access Denied"
-
-    return render_template("upload_resume.html")
-
-
-@app.route("/test_page")
-def test_page():
-
-    if "user_id" not in session:
-        return redirect("/login_page")
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-
-    # 🔥 Fetch questions
-    cursor.execute("""
-        SELECT id, question, option1, option2, option3, option4 
-        FROM questions
-    """)
-
-    questions = cursor.fetchall()   # ✅ NOW it exists
-
-    conn.close()
-    
-    return render_template("test.html", questions=questions)
-
-    
+  
 
 @app.route("/add_candidate", methods=["POST"])
 def add_candidate():
@@ -281,6 +284,7 @@ def add_candidate():
         "message": "Candidate added successfully",
         "hiring_score": float(hiring_score)
     })
+
 
 @app.route("/candidate/<int:user_id>")
 def candidate_profile(user_id):
@@ -337,80 +341,6 @@ def get_candidates():
 
     return jsonify(candidates)
 
-@app.route("/upload_resume", methods=["POST"])
-def upload_resume():
-
-    if "user_id" not in session:
-        return redirect("/login_page")
-
-    if "resume" not in request.files:
-        return "No resume uploaded"
-
-    file = request.files["resume"]
-
-    if file.filename == "":
-        return "No file selected"
-
-    filename = file.filename
-
-    if not filename.lower().endswith(".pdf"):
-        return "Only PDF files are allowed"
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    upload_folder = os.path.join(base_dir, "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
-
-    filepath = os.path.join(upload_folder, filename)
-
-    file.save(filepath)
-
-    # Extract data safely
-    try:
-        text = extract_text_from_pdf(filepath)
-        skills = extract_skills(text)
-    except Exception:
-        return "Invalid PDF file. Please upload a valid resume."
-
-    skill_score = len(skills) * 10
-    experience = 2
-    test_score = 0
-
-    weighted_score = (
-    skill_score * 0.7 +
-    experience * 10 * 0.3
-    )
-
-    hiring_score = weighted_score
-
-    user_id = session["user_id"]
-
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (user_id,))
-    existing = cursor.fetchone()
-
-    if existing:
-        cursor.execute("""
-            UPDATE candidate_profiles
-            SET resume_path=?, skill_score=?, experience=?, hiring_score=?
-            WHERE user_id=?
-        """, (filepath, skill_score, experience, hiring_score, user_id))
-    else:
-        cursor.execute("""
-            INSERT INTO candidate_profiles
-            (user_id, resume_path, experience, test_score, skill_score, hiring_score)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (user_id, filepath, experience, test_score, skill_score, hiring_score))
-
-    conn.commit()
-    conn.close()
-
-    return render_template(
-    "resume_result.html",
-    skills=skills,
-    skill_score=skill_score
-    )
 
 @app.route("/evaluate_candidate", methods=["POST"])
 def evaluate_candidate():
@@ -630,82 +560,65 @@ def get_questions():
 
     return jsonify(questions)
 
-@app.route("/submit_test", methods=["POST"])
-def submit_test():
+@app.route("/upload_resume", methods=["POST"])
+def upload_resume():
 
-    # 🔐 Auth check
     if "user_id" not in session:
         return redirect("/login_page")
 
-    if session.get("role") != "candidate":
-        return "Access Denied"
+    if "resume" not in request.files:
+        return "No file uploaded"
 
-    user_id = session.get("user_id")
-    data = request.form
+    file = request.files["resume"]
 
-    conn = sqlite3.connect("database.db")
+    if file.filename == "":
+        return "No file selected"
+
+    if not file.filename.lower().endswith(".pdf"):
+        return "Only PDF allowed"
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    upload_folder = os.path.join(BASE_DIR, "uploads")
+    os.makedirs(upload_folder, exist_ok=True)
+
+    filepath = os.path.join(upload_folder, file.filename)
+    file.save(filepath)
+
+    try:
+        text = extract_text_from_pdf(filepath)
+        skills = extract_skills(text)
+    except:
+        return "Invalid PDF"
+
+    skill_score = len(skills) * 10
+    experience = 2
+    test_score = 0
+
+    user_id = session["user_id"]
+
+    conn = get_db()
     cursor = conn.cursor()
 
-    # 🧠 Calculate test score
-    score = 0
-    for q_id, answer in data.items():
-        cursor.execute("SELECT correct_answer FROM questions WHERE id=?", (q_id,))
-        correct = cursor.fetchone()[0]
+    cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (user_id,))
+    existing = cursor.fetchone()
 
-        if answer == correct:
-            score += 10
-
-    # 📊 Get candidate profile
-    cursor.execute("""
-        SELECT experience, skill_score
-        FROM candidate_profiles
-        WHERE user_id=?
-    """, (user_id,))
-    
-    row = cursor.fetchone()
-
-    if row is None:
-        return "Please upload resume first"
-
-    experience, skill_score = row
-
-    # ⚙️ Get recruiter weights
-    cursor.execute("""
-        SELECT skill_weight, test_weight, experience_weight
-        FROM recruiter_settings
-        LIMIT 1
-    """)
-
-    weights = cursor.fetchone()
-
-    if weights is None:
-        skill_w, test_w, exp_w = 0.5, 0.3, 0.2
+    if existing:
+        cursor.execute("""
+            UPDATE candidate_profiles
+            SET resume_path=?, skill_score=?, experience=?
+            WHERE user_id=?
+        """, (filepath, skill_score, experience, user_id))
     else:
-        skill_w, test_w, exp_w = weights
-
-    # 🧮 Final scoring logic
-    hiring_score = (
-        (skill_score / 100) * skill_w +
-        (test_score / 100) * test_w +
-        (experience / 10) * exp_w    
-    ) * 100
-
-    # 💾 Update DB
-    cursor.execute("""
-        UPDATE candidate_profiles
-        SET test_score=?, hiring_score=?
-        WHERE user_id=?
-    """, (score, hiring_score, user_id))
+        cursor.execute("""
+            INSERT INTO candidate_profiles
+            (user_id, resume_path, experience, test_score, skill_score, hiring_score)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (user_id, filepath, experience, test_score, skill_score, 0))
 
     conn.commit()
     conn.close()
 
-    # 📄 Show result
-    return render_template(
-        "result.html",
-        score=score,
-        hiring_score=round(hiring_score, 2)
-    )
+    return redirect("/candidate_dashboard")
 
 @app.route("/add_question_page")
 def add_question_page():
@@ -773,6 +686,82 @@ def update_settings():
 
     return redirect("/recruiter_dashboard")
 
+@app.route("/submit_test", methods=["POST"])
+def submit_test():
+
+    if "user_id" not in session:
+        return redirect("/login_page")
+
+    if session.get("role") != "candidate":
+        return "Access Denied"
+
+    data = request.form
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    score = 0
+
+    # calculate score
+    for q_id, answer in data.items():
+        cursor.execute("SELECT correct_answer FROM questions WHERE id=?", (q_id,))
+        correct = cursor.fetchone()[0]
+
+        if answer == correct:
+            score += 10
+
+    user_id = session["user_id"]
+
+    # get profile data
+    cursor.execute("""
+        SELECT experience, skill_score
+        FROM candidate_profiles
+        WHERE user_id=?
+    """, (user_id,))
+
+    row = cursor.fetchone()
+
+    if row is None:
+        return "Please upload resume first"
+
+    experience, skill_score = row
+
+    # get weights
+    cursor.execute("""
+        SELECT skill_weight, test_weight, experience_weight
+        FROM recruiter_settings
+        LIMIT 1
+    """)
+
+    weights = cursor.fetchone()
+
+    if weights:
+        skill_w, test_w, exp_w = weights
+    else:
+        skill_w, test_w, exp_w = 0.5, 0.3, 0.2
+
+    # normalized scoring
+    hiring_score = (
+        (skill_score / 100) * skill_w +
+        (score / 100) * test_w +
+        (experience / 10) * exp_w
+    ) * 100
+
+    # update DB
+    cursor.execute("""
+        UPDATE candidate_profiles
+        SET test_score=?, hiring_score=?
+        WHERE user_id=?
+    """, (score, hiring_score, user_id))
+
+    conn.commit()
+    conn.close()
+
+    return render_template(
+        "result.html",
+        score=score,
+        hiring_score=round(hiring_score, 2)
+    )
 
 @app.route("/add_job_page")
 def add_job_page():
@@ -809,11 +798,12 @@ def logout():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "scoring_model.pkl")
 
-import joblib
-model = joblib.load(MODEL_PATH)
+# import joblib
+# model = joblib.load(MODEL_PATH)
 
 
-
+# if not os.path.exists(MODEL_PATH):
+#     raise Exception("Model file not found at " + MODEL_PATH)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))

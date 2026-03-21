@@ -1,9 +1,11 @@
 import os
-import pickle
 import pandas as pd
+import joblib
 from sklearn.linear_model import LinearRegression
 
-# sample training data
+# -------------------------------
+# 1. Create training data
+# -------------------------------
 data = {
     "experience": [1, 2, 3, 4, 5],
     "test_score": [50, 60, 70, 80, 90],
@@ -16,21 +18,35 @@ df = pd.DataFrame(data)
 X = df[["experience", "test_score", "skill_score"]]
 y = df["hiring_score"]
 
+# -------------------------------
+# 2. Train model
+# -------------------------------
 model = LinearRegression()
 model.fit(X, y)
 
-# get backend directory
+# -------------------------------
+# 3. Create models directory
+# -------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# models folder path
 models_dir = os.path.join(BASE_DIR, "models")
 
-# create folder if missing
 os.makedirs(models_dir, exist_ok=True)
 
+# -------------------------------
+# 4. Save model (IMPORTANT FIX)
+# -------------------------------
 model_path = os.path.join(models_dir, "scoring_model.pkl")
 
-with open(model_path, "wb") as f:
-    pickle.dump(model, f)
+joblib.dump(model, model_path)
 
-print("Model saved at:", model_path)
+print(f"✅ Model saved successfully at: {model_path}")
+
+# -------------------------------
+# 5. Test model (VERY IMPORTANT)
+# -------------------------------
+loaded_model = joblib.load(model_path)
+
+test_input = [[2, 60, 20]]
+prediction = loaded_model.predict(test_input)
+
+print(f"✅ Test prediction: {prediction}")

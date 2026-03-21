@@ -10,10 +10,14 @@ cursor = conn.cursor()
 # # Reset ID counters
 # cursor.execute("DELETE FROM sqlite_sequence WHERE name='users'")
 # cursor.execute("DELETE FROM sqlite_sequence WHERE name='candidate_profiles'")
-cursor.execute("""
-INSERT INTO recruiter_settings (skill_weight, test_weight, experience_weight)
-VALUES (0.5, 0.3, 0.2)
-""")
+# cursor.execute("""
+# INSERT INTO recruiter_settings (skill_weight, test_weight, experience_weight)
+# VALUES (0.5, 0.3, 0.2)
+# """)
+cursor.execute("ALTER TABLE candidate_profiles ADD COLUMN status TEXT")
+
+
+
 conn.commit()
 conn.close()
 
