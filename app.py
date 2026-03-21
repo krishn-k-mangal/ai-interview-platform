@@ -809,7 +809,8 @@ def logout():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "scoring_model.pkl")
 
-model = pickle.load(open(MODEL_PATH, "rb"))
+import joblib
+model = joblib.load(MODEL_PATH)
 
 
 
