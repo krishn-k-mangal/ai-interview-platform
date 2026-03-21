@@ -119,9 +119,26 @@ def candidate_dashboard():
     cursor.execute("SELECT * FROM candidate_profiles WHERE user_id=?", (session["user_id"],))
     profile = cursor.fetchone()
 
+    cursor.execute("""
+        SELECT skill_score, experience
+        FROM candidate_profiles
+        WHERE user_id=?
+    """, (user_id,))
+
+    row = cursor.fetchone()
+
+    if row:
+        skill_score, experience = row
+    else:
+        skill_score, experience = 0, 0
+
     conn.close()
 
-    return render_template("candidate_dashboard.html", profile=profile)
+    return render_template(
+        "candidate_dashboard.html",
+        skill_score=skill_score,
+        experience=experience
+    )
 
 @app.route("/upload_resume_page")
 def upload_resume_page():
@@ -614,6 +631,8 @@ def upload_resume():
             (user_id, resume_path, experience, test_score, skill_score, hiring_score)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (user_id, filepath, experience, test_score, skill_score, 0))
+
+
 
     conn.commit()
     conn.close()
