@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import toast from "react-hot-toast";
 import Loader from "./Loader";
 import API from "../api";
@@ -8,6 +7,7 @@ import EmptyState from "./EmptyState";
 import { Link, useNavigate } from "react-router-dom";
 import StatusBadge from "./StatusBadge";
 import DashboardCard from "./DashboardCard";
+import RecruiterSidebar from "./RecruiterSidebar";
 
 function RecruiterDashboard() {
   const [candidates, setCandidates] = useState([]);
@@ -82,8 +82,8 @@ function RecruiterDashboard() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <Sidebar />
-
+      
+      <RecruiterSidebar />
       {/* Main Content */}
       <div className="ml-64 w-full p-10">
         {/* Header */}
@@ -168,7 +168,7 @@ function RecruiterDashboard() {
               {filteredCandidates.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="p-10">
-                    <EmptyState text="No candidates found 🚫" />
+                    {/* <EmptyState text="No candidates found 🚫" /> */}
                   </td>
                 </tr>
               ) : (
@@ -194,7 +194,7 @@ function RecruiterDashboard() {
                       <button
                         onClick={async () => {
                           await API.put(
-                            `/recruiter/update-status/${c.user_id}?status=shortlisted`,
+                            `/recruiter/update-status/${c.application_id}?status=shortlisted`,
 
                             {},
 
@@ -217,7 +217,7 @@ function RecruiterDashboard() {
                       <button
                         onClick={async () => {
                           await API.put(
-                            `/recruiter/update-status/${c.user_id}?status=rejected`,
+                            `/recruiter/update-status/${c.application_id}?status=rejected`,
 
                             {},
 
@@ -236,11 +236,21 @@ function RecruiterDashboard() {
                       >
                         Reject
                       </button>
-                      <Link to={`/candidate-details/${c.user_id}`}>
-                        <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">
-                          View Details
+
+                      {c.application_id === 0 ? (
+                        <button
+                          disabled
+                          className="bg-gray-400 text-white px-3 py-2 rounded cursor-not-allowed"
+                        >
+                          Not Applied
                         </button>
-                      </Link>
+                      ) : (
+                        <Link to={`/candidate-details/${c.application_id}`}>
+                          <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded">
+                            View Details
+                          </button>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))

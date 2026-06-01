@@ -32,7 +32,7 @@ function Login() {
       }
     } catch (err) {
       
-      toast.success("Login failed");
+      toast.error("Login failed");
 
     }
   };

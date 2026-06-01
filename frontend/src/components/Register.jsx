@@ -30,7 +30,7 @@ function Register() {
     } catch (err) {
       console.log(err.response?.data);
 
-      toast.success("Registration failed");
+      toast.error(err.response?.data?.detail || "Registration failed");
     }
   };
 

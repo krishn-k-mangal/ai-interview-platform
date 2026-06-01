@@ -4,7 +4,7 @@ import API from "../api";
 
 import { Link, useNavigate } from "react-router-dom";
 import DashboardCard from "./DashboardCard";
-
+import CandidateSidebar from "./CandidateSidebar";
 function CandidateDashboard() {
   const [profile, setProfile] = useState(null);
 
@@ -72,83 +72,91 @@ function CandidateDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <CandidateSidebar />
       {/* 🔥 Navbar */}
-      <nav className="bg-white shadow px-10 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-600">AI Hiring Platform</h1>
+      <div className="ml-64 w-full p-10">
+        <nav className="bg-white shadow px-10 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-600">
+            AI Hiring Platform
+          </h1>
+        </nav>
 
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded"
-        >
-          Logout
-        </button>
-      </nav>
+        {/* 🔥 Main */}
+        <div className="p-10">
+          {/* Welcome */}
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold">Candidate Dashboard 🚀</h2>
 
-      {/* 🔥 Main */}
-      <div className="p-10">
-        {/* Welcome */}
-        <div className="mb-10">
-          <h2 className="text-3xl font-bold">Candidate Dashboard 🚀</h2>
+            <p className="text-gray-600 mt-2">
+              Track your progress and interview performance
+            </p>
+          </div>
+          <Link to="/my-applications">
+            <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded">
+              My Applications
+            </button>
+          </Link>
 
-          <p className="text-gray-600 mt-2">
-            Track your progress and interview performance
-          </p>
-        </div>
-
-        {/* 🔥 Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <DashboardCard
-            title="Resume Score"
-            value={profile?.resume_score || 0}
-            color="blue"
-          />
-
-          <DashboardCard
-            title="Test Score"
-            value={profile?.test_score || 0}
-            color="green"
-          />
-
-          <DashboardCard
-            title="Final Score"
-            value={profile?.final_score || 0}
-            color="purple"
-          />
-        </div>
-
-        {/* 🔥 Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Resume Upload */}
-          <div className="bg-white rounded-xl shadow p-8">
-            <h2 className="text-2xl font-bold mb-5">Upload Resume 📄</h2>
-
-            <input
-              type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="mb-5"
+          {/* 🔥 Score Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <DashboardCard
+              title="Resume Score"
+              value={profile?.resume_score || 0}
+              color="blue"
             />
 
-            <br />
+            <DashboardCard
+              title="Test Score"
+              value={profile?.test_score || 0}
+              color="green"
+            />
 
-            <button
-              onClick={handleUpload}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded"
-            >
-              Upload Resume
-            </button>
+            <DashboardCard
+              title="Final Score"
+              value={profile?.final_score || 0}
+              color="purple"
+            />
           </div>
 
-          {/* Test Section */}
-          <div className="bg-white rounded-xl shadow p-8">
-            <h2 className="text-2xl font-bold mb-5">Aptitude Test 🧠</h2>
+          {/* 🔥 Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Resume Upload */}
+            <div className="bg-white rounded-xl shadow p-8">
+              <h2 className="text-2xl font-bold mb-5">Upload Resume 📄</h2>
 
-            <p className="text-gray-600 mb-6">
-              Complete your aptitude test to improve your hiring score.
-            </p>
+              <input
+                type="file"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="mb-5"
+              />
 
-            <Link to="/test">
-              <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded">
-                Start Test
+              <br />
+
+              <button
+                onClick={handleUpload}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded"
+              >
+                Upload Resume
+              </button>
+            </div>
+
+            {/* Test Section */}
+            <div className="bg-white rounded-xl shadow p-8">
+              <h2 className="text-2xl font-bold mb-5">Aptitude Test 🧠</h2>
+
+              <p className="text-gray-600 mb-6">
+                Complete your aptitude test to improve your hiring score.
+              </p>
+
+              <Link to="/test">
+                <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded">
+                  Start Test
+                </button>
+              </Link>
+            </div>
+            <Link to="/candidate-jobs">
+              <button className="bg-purple-500 text-white px-6 py-3 rounded">
+                Browse Jobs
               </button>
             </Link>
           </div>

@@ -95,7 +95,8 @@ def register(
 
         raise HTTPException(
             status_code=400,
-            detail="Email already registered ❌"
+            detail="Email already registered ❌",
+            
         )
 
     # hash password

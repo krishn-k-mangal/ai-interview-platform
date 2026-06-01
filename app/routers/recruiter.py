@@ -8,7 +8,9 @@ from app.models.user import User
 from app.models.candidate_profile import CandidateProfile
 from app.models.question import Question
 from app.utils.deps import require_role
-
+from app.utils.ai_summary import generate_ai_summary
+from app.utils.recommendation import get_recommendation_label
+from app.models.application import Application
 
 
 class QuestionCreate(BaseModel):
@@ -31,9 +33,12 @@ router = APIRouter(
 @router.get("/candidates")
 def get_candidates(
 
-    current_user: dict = Depends(require_role("recruiter")),
+    current_user: dict = Depends(
+        require_role("recruiter")
+    ),
+
     db: Session = Depends(get_db)
-    ):
+):
 
     candidates = db.query(
         User,
@@ -49,27 +54,38 @@ def get_candidates(
 
     for user, profile in candidates:
 
+        application = db.query(Application).filter(
+            Application.candidate_id == user.id
+        ).order_by(
+            Application.id.desc()
+        ).first()
+
         result.append({
-            "user_id": user.id,
+
+            "application_id": application.id if application else 0,
+
+            "candidate_id": user.id,
 
             "name": user.name,
+
             "email": user.email,
 
-            "resume_score": profile.skill_score,
-            "test_score": profile.test_score,
+            "resume_score": getattr(profile, "skill_score", 0),
+
+            "test_score": getattr(profile, "test_score", 0),
+
             "final_score": getattr(profile, "final_score", 0),
-            "status": getattr(profile, "status", "pending")
+
+            "status": application.status if application else "not applied",
+
+            "match_score": application.match_score if application else 0,
+
+            # "recommendation": app.recommendation,
+
+            
         })
-
-    # 🔥 sort by final score
-    result.sort(
-        key=lambda x: x["final_score"],
-        reverse=True
-    )
-
+    print(result)
     return result
-
-
 
 @router.post("/add-question")
 def add_question(
@@ -179,49 +195,62 @@ def edit_question(
         "message": "Question updated successfully ✅"
 }
 
-@router.put("/update-status/{candidate_id}")
+@router.put("/update-status/{application_id}")
 def update_status(
 
-    candidate_id: int,
+    application_id: int,
 
     status: str,
 
-    current_user: dict = Depends(require_role("recruiter")),
+    current_user: dict = Depends(
+        require_role("recruiter")
+    ),
 
     db: Session = Depends(get_db)
     ):
 
-    profile = db.query(CandidateProfile).filter(
-        CandidateProfile.user_id == candidate_id
+    application = db.query(Application).filter(
+        Application.id == application_id
     ).first()
 
-    if not profile:
+    if not application:
 
         return {
-            "error": "Candidate not found ❌"
+            "error": "Application not found ❌"
         }
 
-    profile.status = status
+    application.status = status
 
     db.commit()
 
     return {
         "message": "Status updated successfully ✅"
-}
+    }
 
-@router.get("/candidate/{candidate_id}")
+@router.get("/application/{application_id}")
 def get_candidate_details(
 
-    candidate_id: int,
+    application_id: int,
 
     current_user: dict = Depends(require_role("recruiter")),
 
     db: Session = Depends(get_db)
-    ):
+):
+
+    # get application first
+    application = db.query(Application).filter(
+        Application.id == application_id
+    ).first()
+
+    if not application:
+
+        return {
+            "message": "Application not found ❌"
+        }
 
     # get user
     user = db.query(User).filter(
-        User.id == candidate_id
+        User.id == application.candidate_id
     ).first()
 
     if not user:
@@ -232,30 +261,60 @@ def get_candidate_details(
 
     # get profile
     profile = db.query(CandidateProfile).filter(
-        CandidateProfile.user_id == candidate_id
+        CandidateProfile.user_id == application.candidate_id
     ).first()
+    
+    ai_summary = generate_ai_summary(
 
-    if not profile:
+        application.match_score,
 
-        return {
-            "error": "Candidate profile not found ❌"
-        }
+        application.matched_skills,
+
+        application.missing_skills
+    )
+    recommendation = get_recommendation_label(
+        application.match_score
+    )
 
     return {
 
-        "id": user.id,
+    "candidate_id": user.id,
 
-        "name": user.name,
+    "name": user.name,
 
-        "email": user.email,
+    "email": user.email,
 
-        "resume_score": getattr(profile, "skill_score", 0),
+    "match_score": application.match_score,
 
-        "test_score": getattr(profile, "test_score", 0),
+    "matched_skills": application.matched_skills,
 
-        "final_score": getattr(profile, "final_score", 0),
+    "missing_skills": application.missing_skills,
 
-        "status": getattr(profile, "status", "pending")
+    "extra_skills": application.extra_skills,
+
+    "status": application.status,
+
+    "resume_score": getattr(
+        profile,
+        "skill_score",
+        0
+    ),
+
+    "test_score": getattr(
+        profile,
+        "test_score",
+        0
+    ),
+
+    "resume_path": getattr(
+        profile,
+        "resume_path",
+        ""
+    ),
+
+    "ai_summary": ai_summary,
+
+    "recommendation": recommendation
 }
 
 
@@ -263,6 +322,10 @@ def get_candidate_details(
 def view_resume(
 
     candidate_id: int,
+
+    current_user: dict = Depends(
+        require_role("recruiter")
+    ),
 
     db: Session = Depends(get_db)
     ):

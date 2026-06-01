@@ -7,6 +7,7 @@ from app.models.user import User
 from app.utils.deps import require_role
 from app.models.candidate_profile import CandidateProfile
 from resume_parser import extract_text_from_pdf, extract_skills
+from app.utils.recommendation import get_recommendation_label
 
 
 router = APIRouter(
@@ -70,6 +71,8 @@ def upload_resume(
 
         profile.skill_score = skill_score
 
+        profile.skills = ", ".join(skills)
+
     # create new profile
     else:
 
@@ -89,6 +92,7 @@ def upload_resume(
         db.add(profile)
 
     db.commit()
+   
 
     return {
         "message": "Resume processed & saved ✅",
@@ -100,7 +104,7 @@ def upload_resume(
 def get_my_profile(
     current_user: User = Depends(require_role("candidate")),
     db: Session = Depends(get_db)
-):
+    ):
 
     profile = db.query(CandidateProfile).filter(
         CandidateProfile.user_id == current_user["user_id"]
@@ -121,5 +125,5 @@ def get_my_profile(
         "test_score": profile.test_score,
         "final_score": final_score,
         "status": profile.status
-    }
+}
     

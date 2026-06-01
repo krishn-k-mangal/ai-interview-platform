@@ -12,3 +12,4 @@ class CandidateProfile(Base):
     status = Column(String, default="pending")
     final_score = Column(Float, default=0)
     resume_file = Column(String, nullable=True)
+    skills = Column(String, nullable=True)

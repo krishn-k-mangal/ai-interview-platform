@@ -4,7 +4,8 @@ import Modal from "./Model";
 
 import API from "../api";
 
-import Sidebar from "../components/Sidebar";
+
+import RecruiterSidebar from "./RecruiterSidebar";
 
 function AddQuestion() {
   const token = localStorage.getItem("token");
@@ -102,7 +103,7 @@ function AddQuestion() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* 🔥 Sidebar */}
-      <Sidebar />
+      <RecruiterSidebar />
 
       {/* 🔥 Main Content */}
       <div className="ml-64 w-full p-10">

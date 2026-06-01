@@ -4,24 +4,30 @@ import { useParams } from "react-router-dom";
 
 import API from "../api";
 
-import Sidebar from "../components/Sidebar";
+import RecruiterSidebar from "./RecruiterSidebar";
 
-import DashboardCard from "../components/DashboardCard";
+import Loader from "./Loader";
 
-import Loader from "../components/Loader";
+import MatchProgress from "./MatchProgress";
+
+import SkillBadge from "./SkillBadge";
+
+import StatusBadge from "./StatusBadge";
 
 function CandidateDetails() {
-  const { id } = useParams();
-
   const token = localStorage.getItem("token");
+  // console.log("TOKEN:", token);
 
   const [candidate, setCandidate] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
+  const { applicationId } = useParams();
+
+  // fetch candidate
   useEffect(() => {
     API.get(
-      `/recruiter/candidate/${id}`,
+      `/recruiter/application/${applicationId}`,
 
       {
         headers: {
@@ -33,16 +39,23 @@ function CandidateDetails() {
       .then((res) => {
         setCandidate(res.data);
 
+        console.log("Response Data:", res.data);
+
         setLoading(false);
       })
 
       .catch((err) => {
-        console.log(err);
+        console.log("FULL ERROR:", err);
+
+        console.log("SERVER RESPONSE:", err?.response?.data);
+
+        console.log("STATUS:", err?.response?.status);
 
         setLoading(false);
       });
   }, []);
 
+  // loading
   if (loading) {
     return <Loader text="Loading candidate..." />;
   }
@@ -50,71 +63,139 @@ function CandidateDetails() {
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <Sidebar />
+      <RecruiterSidebar />
 
-      {/* Main */}
+      {/* Main Content */}
       <div className="ml-64 w-full p-10">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold">Candidate Details 🚀</h1>
+        {/* Hero Section */}
+        <div className="bg-white rounded-2xl shadow p-8 mb-8">
+          <div className="flex flex-col md:flex-row justify-between gap-8">
+            {/* Left */}
+            <div>
+              <h1 className="text-4xl font-bold">{candidate?.name}</h1>
+              <p className="text-gray-500 mt-2">{candidate?.email}</p>
+              <div className="mt-4">
+                <StatusBadge status={candidate?.status} />
+              </div>
+            </div>
 
-          <p className="text-gray-600 mt-2">
-            Detailed candidate profile and performance
-          </p>
+            {/* Right */}
+            <div className="w-full md:w-72">
+              <MatchProgress score={candidate?.match_score || 0} />
+            </div>
+          </div>
         </div>
 
-        {/* Profile Card */}
-        <div className="bg-white rounded-2xl shadow p-8 mb-10">
-          <h2 className="text-2xl font-bold mb-6">Profile Information</h2>
+        {/* AI Summary */}
+        <div className="bg-white rounded-2xl shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4">AI Summary 🤖</h2>
 
-          <div className="space-y-4">
-            <p>
-              <span className="font-semibold">Name:</span> {candidate?.name}
-            </p>
+          <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
+        </div>
 
-            <p>
-              <span className="font-semibold">Email:</span> {candidate?.email}
-            </p>
+        <div className="bg-white p-6 rounded-xl shadow mt-8">
+          <h2 className="text-2xl font-bold mb-4">AI Resume Summary 🤖</h2>
 
-            <p>
-              <span className="font-semibold">Status:</span> {candidate?.status}
-            </p>
+          <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4">AI Recommendation 🎯</h2>
+
+          <div className="inline-block bg-blue-100 text-blue-700 px-5 py-3 rounded-full font-semibold">
+            {candidate?.recommendation}
+          </div>
+        </div>
+
+        {/* Skills Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Matched Skills */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold text-green-600 mb-4">
+              Matched Skills
+            </h3>
+
+            <div className="flex flex-wrap gap-2">
+              {candidate?.matched_skills
+
+                ?.split(",")
+
+                .filter(Boolean)
+
+                .map((skill, index) => (
+                  <SkillBadge key={index} text={skill.trim()} color="green" />
+                ))}
+            </div>
+          </div>
+
+          {/* Missing Skills */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold text-red-600 mb-4">
+              Missing Skills
+            </h3>
+
+            <div className="flex flex-wrap gap-2">
+              {candidate?.missing_skills
+
+                ?.split(",")
+
+                .filter(Boolean)
+
+                .map((skill, index) => (
+                  <SkillBadge key={index} text={skill.trim()} color="red" />
+                ))}
+            </div>
+          </div>
+
+          {/* Extra Skills */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold text-blue-600 mb-4">
+              Extra Skills
+            </h3>
+
+            <div className="flex flex-wrap gap-2">
+              {candidate?.extra_skills
+
+                ?.split(",")
+
+                .filter(Boolean)
+
+                .map((skill, index) => (
+                  <SkillBadge key={index} text={skill.trim()} color="blue" />
+                ))}
+            </div>
           </div>
         </div>
 
         {/* Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <DashboardCard
-            title="Resume Score"
-            value={candidate?.resume_score}
-            color="blue"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Resume Score */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold mb-4">Resume Score</h3>
 
-          <DashboardCard
-            title="Test Score"
-            value={candidate?.test_score}
-            color="green"
-          />
+            <p className="text-5xl font-bold text-blue-600">
+              {candidate?.resume_score || 0}
+            </p>
+          </div>
 
-          <DashboardCard
-            title="Final Score"
-            value={candidate?.final_score}
-            color="purple"
-          />
+          {/* Test Score */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold mb-4">Test Score</h3>
+
+            <p className="text-5xl font-bold text-green-600">
+              {candidate?.test_score || 0}
+            </p>
+          </div>
         </div>
-        <a
-          href={`http://127.0.0.1:8000/recruiter/resume/${candidate.id}`}
-          target="_blank"
-          rel="noreferrer"
-        >
+
+        {/* Resume Section */}
+        <div className="bg-white rounded-2xl shadow p-6">
+          <h2 className="text-2xl font-bold mb-6">Resume</h2>
+
           <button
             onClick={async () => {
-                
-
               try {
-                console.log(token);
                 const response = await API.get(
-                  `/recruiter/resume/${candidate.id}`,
+                  `/recruiter/resume/${candidate?.candidate_id}`,
 
                   {
                     headers: {
@@ -136,11 +217,11 @@ function CandidateDetails() {
                 console.log(err);
               }
             }}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg mt-8"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl"
           >
             View Resume
           </button>
-        </a>
+        </div>
       </div>
     </div>
   );
