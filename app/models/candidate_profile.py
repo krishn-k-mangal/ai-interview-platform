@@ -9,7 +9,7 @@ class CandidateProfile(Base):
     resume_path = Column(String)
     skill_score = Column(Float)
     test_score = Column(Float, default=0)
-    status = Column(String, default="pending")
+    status = Column(String, default="applied")
     final_score = Column(Float, default=0)
     resume_file = Column(String, nullable=True)
     skills = Column(String, nullable=True)

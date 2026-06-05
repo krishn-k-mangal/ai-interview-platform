@@ -86,7 +86,7 @@ def upload_resume(
 
             skill_score=skill_score,
 
-            status="pending"
+            status="applied"
         )
 
         db.add(profile)

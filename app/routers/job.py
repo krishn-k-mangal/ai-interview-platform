@@ -79,7 +79,7 @@ def apply_job(
     ),
 
     db: Session = Depends(get_db)
-):
+    ):
 
     try:
 
@@ -297,14 +297,16 @@ def get_job_applicants(
     })
     return result
 
-@router.put("/update-status/{application_id}")
-def update_application_status(
+@router.put("/update-notes/{application_id}")
+def update_notes(
 
     application_id: int,
 
     data: dict,
 
-    current_user: dict = Depends(require_role("recruiter")),
+    current_user: dict = Depends(
+        require_role("recruiter")
+    ),
 
     db: Session = Depends(get_db)
     ):
@@ -319,14 +321,51 @@ def update_application_status(
             "message": "Application not found ❌"
         }
 
-    application.status = data["status"]
+    application.recruiter_notes = data["notes"]
 
     db.commit()
 
     return {
-        "message": "Status updated ✅"
+        "message": "Notes updated successfully ✅"
     }
 
+@router.put("/schedule-interview/{application_id}")
+def schedule_interview(
+
+    application_id: int,
+
+    data: dict,
+
+    current_user: dict = Depends(
+        require_role("recruiter")
+    ),
+
+    db: Session = Depends(get_db)
+    ):
+
+    application = db.query(Application).filter(
+        Application.id == application_id
+    ).first()
+
+    if not application:
+        return {
+            "message": "Application not found ❌"
+        }
+    print("APPLICATION ID:", application_id)
+    print("DATA:", data)
+    application.interview_date = data["interview_date"]
+
+    application.interview_time = data["interview_time"]
+
+    application.meeting_link = data["meeting_link"]
+
+    application.status = "interview_scheduled"
+    print("SAVING...")
+    db.commit()
+
+    return {
+        "message": "Interview scheduled successfully ✅"
+    }
 
 @router.get("/analytics")
 def recruiter_analytics(
@@ -430,8 +469,15 @@ def my_applications(
 
             "missing_skills": app.missing_skills,
 
+            "interview_date": app.interview_date,
+
+            "interview_time": app.interview_time,
+
+            "meeting_link": app.meeting_link,
+
             # "recommendation": app.recommendation,
         })
+    print(result)
 
     return result
 

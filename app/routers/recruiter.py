@@ -235,7 +235,7 @@ def get_candidate_details(
     current_user: dict = Depends(require_role("recruiter")),
 
     db: Session = Depends(get_db)
-):
+    ):
 
     # get application first
     application = db.query(Application).filter(
@@ -314,7 +314,16 @@ def get_candidate_details(
 
     "ai_summary": ai_summary,
 
-    "recommendation": recommendation
+    "recommendation": recommendation,
+
+    "recruiter_notes": application.recruiter_notes,
+
+    "interview_date": application.interview_date,
+
+    "interview_time": application.interview_time,
+
+    "meeting_link": application.meeting_link,
+
 }
 
 

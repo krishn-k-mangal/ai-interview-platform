@@ -22,6 +22,8 @@ function CandidateDetails() {
 
   const [loading, setLoading] = useState(true);
 
+  const [notes, setNotes] = useState("");
+
   const { applicationId } = useParams();
 
   // fetch candidate
@@ -38,6 +40,8 @@ function CandidateDetails() {
 
       .then((res) => {
         setCandidate(res.data);
+
+        setNotes(res.data.recruiter_notes || "");
 
         console.log("Response Data:", res.data);
 
@@ -98,12 +102,52 @@ function CandidateDetails() {
 
           <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
         </div>
+
         <div className="bg-white rounded-2xl shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">AI Recommendation 🎯</h2>
 
           <div className="inline-block bg-blue-100 text-blue-700 px-5 py-3 rounded-full font-semibold">
             {candidate?.recommendation}
           </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4">Recruiter Notes 📝</h2>
+
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={5}
+            placeholder="Write recruiter notes..."
+            className="w-full border rounded-xl p-4"
+          />
+
+          <button
+            onClick={async () => {
+              try {
+                await API.put(
+                  `/jobs/update-notes/${applicationId}`,
+
+                  {
+                    notes: notes,
+                  },
+
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  },
+                );
+
+                alert("Notes saved successfully ✅");
+              } catch (err) {
+                console.log(err);
+              }
+            }}
+            className="mt-4 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl"
+          >
+            Save Notes
+          </button>
         </div>
 
         {/* Skills Section */}

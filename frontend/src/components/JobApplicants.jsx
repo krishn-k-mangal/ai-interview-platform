@@ -324,11 +324,21 @@ function JobApplicants() {
                           }
                           className="border rounded px-3 py-2"
                         >
-                          <option value="pending">Pending</option>
+                          <option value="applied">Applied</option>
+
+                          <option value="screening">Screening</option>
 
                           <option value="shortlisted">Shortlisted</option>
 
-                          <option value="interview">Interview</option>
+                          <option value="interview_scheduled">
+                            Interview Scheduled
+                          </option>
+
+                          <option value="technical_round">
+                            Technical Round
+                          </option>
+
+                          <option value="hr_round">HR Round</option>
 
                           <option value="selected">Selected</option>
 

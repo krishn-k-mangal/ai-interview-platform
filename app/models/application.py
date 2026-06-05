@@ -12,7 +12,7 @@ class Application(Base):
 
     job_id = Column(Integer)
 
-    status = Column(String, default="pending")
+    status = Column(String, default="applied")
 
     match_score = Column(Float, default=0)
 
@@ -25,3 +25,9 @@ class Application(Base):
     ai_summary = Column(Text)
 
     recommendation = Column(String)
+
+    recruiter_notes = Column(Text)
+
+    interview_date = Column(String)
+    interview_time = Column(String)
+    meeting_link = Column(Text)

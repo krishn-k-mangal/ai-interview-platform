@@ -77,12 +77,12 @@ function RecruiterDashboard() {
     (c) => c.status === "rejected",
   ).length;
 
-  const pendingCount = candidates.filter((c) => c.status === "pending").length;
+  const appliedCount = candidates.filter((c) => c.status === "applied").length;
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      
+
       <RecruiterSidebar />
       {/* Main Content */}
       <div className="ml-64 w-full p-10">
@@ -108,7 +108,7 @@ function RecruiterDashboard() {
 
           <DashboardCard title="Rejected" value={rejectedCount} color="red" />
 
-          <DashboardCard title="Pending" value={pendingCount} color="purple" />
+          <DashboardCard title="Applied" value={appliedCount} color="purple" />
         </div>
 
         {/* Search */}
@@ -134,7 +134,7 @@ function RecruiterDashboard() {
 
               <option value="rejected">Rejected</option>
 
-              <option value="pending">Pending</option>
+              <option value="applied">Applied</option>
             </select>
             <select
               value={sortOrder}
