@@ -11,6 +11,7 @@ from app.utils.deps import require_role
 from app.utils.ai_summary import generate_ai_summary
 from app.utils.recommendation import get_recommendation_label
 from app.models.application import Application
+from app.models.job import Job
 
 
 class QuestionCreate(BaseModel):
@@ -38,31 +39,48 @@ def get_candidates(
     ),
 
     db: Session = Depends(get_db)
-):
+    ):
 
-    candidates = db.query(
-        User,
-        CandidateProfile
-    ).join(
-        CandidateProfile,
-        User.id == CandidateProfile.user_id
-    ).filter(
-        User.role == "candidate"
+    jobs = db.query(Job).filter(
+        Job.recruiter_id == current_user["user_id"]
+    ).all()
+
+    job_ids = [job.id for job in jobs]
+
+    applications = db.query(Application).filter(
+        Application.job_id.in_(job_ids)
     ).all()
 
     result = []
 
-    for user, profile in candidates:
+    for application in applications:
 
-        application = db.query(Application).filter(
-            Application.candidate_id == user.id
-        ).order_by(
-            Application.id.desc()
+        user = db.query(User).filter(
+            User.id == application.candidate_id
         ).first()
+
+        profile = db.query(CandidateProfile).filter(
+            CandidateProfile.user_id == application.candidate_id
+        ).first()
+
+        overall_score = round(
+
+            (application.match_score * 0.4)
+
+            +
+
+            (getattr(profile, "skill_score", 0) * 0.3)
+
+            +
+
+            (getattr(profile, "test_score", 0) * 0.3),
+
+            2
+        )
 
         result.append({
 
-            "application_id": application.id if application else 0,
+            "application_id": application.id,
 
             "candidate_id": user.id,
 
@@ -74,19 +92,22 @@ def get_candidates(
 
             "test_score": getattr(profile, "test_score", 0),
 
-            "final_score": getattr(profile, "final_score", 0),
+            "overall_score": overall_score,
 
-            "status": application.status if application else "not applied",
+            "status": application.status,
 
-            "match_score": application.match_score if application else 0,
-
-            # "recommendation": app.recommendation,
-
-            
+            "match_score": application.match_score,
         })
-    print(result)
-    return result
 
+    result.sort(
+
+        key=lambda x: x["overall_score"],
+
+        reverse=True
+    )
+    for index, candidate in enumerate(result, start=1):
+        candidate["rank"] = index
+    return result
 @router.post("/add-question")
 def add_question(
     data: QuestionCreate,

@@ -94,10 +94,7 @@ function App() {
       <Route path="/add-job" element={<RucruiterCreateJob />} />
 
 
-      <Route
-        path="/candidate-details/:applicationId"
-        element={<CandidateDetails />}
-      />
+     
 
       <Route path="/recruiter-analytics" element={<RecruiterAnalytics />} />
       

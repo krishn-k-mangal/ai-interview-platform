@@ -385,6 +385,31 @@ def recruiter_analytics(
     applications = db.query(Application).filter(
         Application.job_id.in_(job_ids)
     ).all()
+    
+    applied = len([
+    a for a in applications
+    if a.status == "applied"
+    ])
+
+    screening = len([
+        a for a in applications
+        if a.status == "screening"
+    ])
+
+    interview_scheduled = len([
+        a for a in applications
+        if a.status == "interview_scheduled"
+    ])
+
+    technical_round = len([
+        a for a in applications
+        if a.status == "technical_round"
+    ])
+
+    hr_round = len([
+        a for a in applications
+        if a.status == "hr_round"
+    ])
 
     total_jobs = len(jobs)
 
@@ -430,7 +455,17 @@ def recruiter_analytics(
 
         "selected": selected,
 
-        "avg_match_score": avg_match
+        "avg_match_score": avg_match,
+        
+        "applied": applied,
+
+        "screening": screening,
+
+        "interview_scheduled": interview_scheduled,
+
+        "technical_round": technical_round,
+
+        "hr_round": hr_round,
 }
 
 @router.get("/my-applications")

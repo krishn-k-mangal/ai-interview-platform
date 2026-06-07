@@ -58,10 +58,10 @@ function RecruiterDashboard() {
 
   filteredCandidates.sort((a, b) => {
     if (sortOrder === "high") {
-      return b.final_score - a.final_score;
+      return b.overall_score - a.overall_score;
     }
 
-    return a.final_score - b.final_score;
+    return a.overall_score - b.overall_score;
   });
   if (loading) {
     return <Loader />;
@@ -110,6 +110,8 @@ function RecruiterDashboard() {
 
           <DashboardCard title="Applied" value={appliedCount} color="purple" />
         </div>
+
+        <div className="font-bold text-purple-600">{candidates.rank}</div>
 
         {/* Search */}
         <input
@@ -183,7 +185,7 @@ function RecruiterDashboard() {
                     <td className="p-4">{c.test_score}</td>
 
                     <td className="p-4 font-bold text-green-600">
-                      {c.final_score}
+                      {c.overall_score}
                     </td>
 
                     <td className="p-4">
