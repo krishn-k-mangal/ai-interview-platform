@@ -23,6 +23,11 @@ function CandidateDetails() {
   const [loading, setLoading] = useState(true);
 
   const [notes, setNotes] = useState("");
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
+  const [interviewMode, setInterviewMode] = useState("");
+  const [interviewNotes, setInterviewNotes] = useState("");
 
   const { applicationId } = useParams();
 
@@ -42,6 +47,12 @@ function CandidateDetails() {
         setCandidate(res.data);
 
         setNotes(res.data.recruiter_notes || "");
+
+        setInterviewDate(res.data.interview_date || "");
+        setInterviewTime(res.data.interview_time || "");
+        setMeetingLink(res.data.meeting_link || "");
+        setInterviewMode(res.data.interview_mode || "");
+        setInterviewNotes(res.data.interview_notes || "");
 
         console.log("Response Data:", res.data);
 
@@ -111,6 +122,7 @@ function CandidateDetails() {
           </div>
         </div>
 
+        {/* notes section */}
         <div className="bg-white rounded-2xl shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">Recruiter Notes 📝</h2>
 
@@ -147,6 +159,93 @@ function CandidateDetails() {
             className="mt-4 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl"
           >
             Save Notes
+          </button>
+        </div>
+          
+            {/* scadule interview */}
+
+        <div className="bg-white rounded-2xl shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-6">Interview Scheduler 🎯</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="date"
+              value={interviewDate}
+              onChange={(e) => setInterviewDate(e.target.value)}
+              className="border rounded-xl p-3"
+            />
+
+            <input
+              type="time"
+              value={interviewTime}
+              onChange={(e) => setInterviewTime(e.target.value)}
+              className="border rounded-xl p-3"
+            />
+
+            <select
+              value={interviewMode}
+              onChange={(e) => setInterviewMode(e.target.value)}
+              className="border rounded-xl p-3"
+            >
+              <option value="">Select Mode</option>
+
+              <option value="Google Meet">Google Meet</option>
+
+              <option value="Zoom">Zoom</option>
+
+              <option value="Microsoft Teams">Microsoft Teams</option>
+
+              <option value="Phone Call">Phone Call</option>
+
+              <option value="In-Person">In-Person</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Meeting Link"
+              value={meetingLink}
+              onChange={(e) => setMeetingLink(e.target.value)}
+              className="border rounded-xl p-3"
+            />
+          </div>
+
+          <textarea
+            rows={4}
+            placeholder="Interview Notes..."
+            value={interviewNotes}
+            onChange={(e) => setInterviewNotes(e.target.value)}
+            className="w-full border rounded-xl p-4 mt-4"
+          />
+
+          <button
+            onClick={async () => {
+              try {
+                await API.put(
+                  `/jobs/schedule-interview/${applicationId}`,
+
+                  {
+                    interview_date: interviewDate,
+                    interview_time: interviewTime,
+                    meeting_link: meetingLink,
+                    interview_mode: interviewMode,
+                    interview_notes: interviewNotes,
+                  },
+
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  },
+                );
+
+                alert("Interview scheduled successfully ✅");
+              } catch (err) {
+                console.log(err);
+              }
+            }}
+            className="mt-4 bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl"
+          >
+            Schedule Interview
           </button>
         </div>
 

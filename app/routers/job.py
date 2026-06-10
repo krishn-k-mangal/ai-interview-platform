@@ -360,7 +360,10 @@ def schedule_interview(
     application.meeting_link = data["meeting_link"]
 
     application.status = "interview_scheduled"
-    print("SAVING...")
+    # print("SAVING...")
+    application.interview_mode = data["interview_mode"]
+
+    application.interview_notes = data["interview_notes"]
     db.commit()
 
     return {
@@ -505,10 +508,14 @@ def my_applications(
             "missing_skills": app.missing_skills,
 
             "interview_date": app.interview_date,
-
+            
             "interview_time": app.interview_time,
-
+            
             "meeting_link": app.meeting_link,
+            
+            "interview_mode": app.interview_mode,
+            
+            "interview_notes": app.interview_notes,
 
             # "recommendation": app.recommendation,
         })

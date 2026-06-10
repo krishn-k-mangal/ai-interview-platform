@@ -55,7 +55,7 @@ function RecruiterDashboard() {
 
     return matchesSearch && matchesStatus;
   });
-
+  const sortedCandidates = [...filteredCandidates];
   filteredCandidates.sort((a, b) => {
     if (sortOrder === "high") {
       return b.overall_score - a.overall_score;
@@ -111,8 +111,6 @@ function RecruiterDashboard() {
           <DashboardCard title="Applied" value={appliedCount} color="purple" />
         </div>
 
-        <div className="font-bold text-purple-600">{candidates.rank}</div>
-
         {/* Search */}
         <input
           type="text"
@@ -151,6 +149,7 @@ function RecruiterDashboard() {
           <table className="w-full">
             <thead className="bg-blue-500 text-white">
               <tr>
+                <th className="p-4 text-left">Rank</th>
                 <th className="p-4 text-left">Name</th>
 
                 <th className="p-4 text-left">Email</th>
@@ -176,6 +175,7 @@ function RecruiterDashboard() {
               ) : (
                 filteredCandidates.map((c, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
+                    <td className="p-4 font-bold text-purple-600">#{c.rank}</td>
                     <td className="p-4 font-medium">{c.name}</td>
 
                     <td className="p-4">{c.email}</td>
@@ -196,7 +196,7 @@ function RecruiterDashboard() {
                       <button
                         onClick={async () => {
                           await API.put(
-                            `/recruiter/update-status/${c.application_id}?status=shortlisted`,
+                            `/jobs/update-status/${c.application_id}?status=shortlisted`,
 
                             {},
 
@@ -219,7 +219,7 @@ function RecruiterDashboard() {
                       <button
                         onClick={async () => {
                           await API.put(
-                            `/recruiter/update-status/${c.application_id}?status=rejected`,
+                            `/jobs/update-status/${c.application_id}?status=rejected`,
 
                             {},
 

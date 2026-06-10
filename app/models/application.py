@@ -31,3 +31,7 @@ class Application(Base):
     interview_date = Column(String)
     interview_time = Column(String)
     meeting_link = Column(Text)
+    
+    interview_mode = Column(String)
+
+    interview_notes = Column(Text)

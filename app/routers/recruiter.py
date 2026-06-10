@@ -341,9 +341,13 @@ def get_candidate_details(
 
     "interview_date": application.interview_date,
 
+    "meeting_link": application.meeting_link,
+
     "interview_time": application.interview_time,
 
-    "meeting_link": application.meeting_link,
+    "interview_mode": application.interview_mode,
+
+    "interview_notes": application.interview_notes,
 
 }
 
