@@ -34,6 +34,13 @@ def upload_resume(
     current_user: dict = Depends(require_role("candidate")),
     db: Session = Depends(get_db)
     ):
+    
+    if not file.filename.endswith(".pdf"):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files allowed"
+        )
 
     import os
 
@@ -51,6 +58,8 @@ def upload_resume(
 
     # 🔥 parse resume
     text = extract_text_from_pdf(file_path)
+    quality = calculate_resume_quality(text)
+    resume_quality_score = calculate_resume_quality(text)
     skills = extract_skills(text)
 
     skill_score = len(skills) * 10
@@ -61,7 +70,12 @@ def upload_resume(
     profile = db.query(CandidateProfile).filter(
         CandidateProfile.user_id == current_user["user_id"]
     ).first()
+    if profile and profile.resume_path:
 
+        import os
+
+        if os.path.exists(profile.resume_path):
+            os.remove(profile.resume_path)
     # update existing profile
     if profile:
 
@@ -72,6 +86,10 @@ def upload_resume(
         profile.skill_score = skill_score
 
         profile.skills = ", ".join(skills)
+        
+        profile.resume_quality_score = (
+            quality["resume_quality_score"]
+        )
 
     # create new profile
     else:
@@ -86,8 +104,13 @@ def upload_resume(
 
             skill_score=skill_score,
 
-            status="applied"
-        )
+            skills=", ".join(skills),
+
+            status="applied",
+            
+            resume_quality_score=
+                quality["resume_quality_score"],
+                        )
 
         db.add(profile)
 
@@ -97,8 +120,11 @@ def upload_resume(
     return {
         "message": "Resume processed & saved ✅",
         "skills": skills,
-        "skill_score": skill_score
+        "skill_score": skill_score,
+        "resume_quality_score":
+            quality["resume_quality_score"]
         }
+        
 
 @router.get("/my-profile")
 def get_my_profile(

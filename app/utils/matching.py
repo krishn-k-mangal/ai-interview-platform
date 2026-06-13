@@ -3,7 +3,7 @@ def calculate_match(
     candidate_skills,
 
     required_skills
-):
+    ):
 
     candidate_set = set(
         [s.strip().lower() for s in candidate_skills]

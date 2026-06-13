@@ -10,6 +10,19 @@ function CandidateApplications() {
 
   const token = localStorage.getItem("token");
 
+  const stages = [
+    "applied",
+    "screening",
+    "shortlisted",
+    "interview_scheduled",
+    "technical_round",
+    "hr_round",
+    "selected",
+  ];
+
+  const getStageIndex = (status) => {
+    return stages.indexOf(status);
+  };
   // fetch candidate applications
   useEffect(() => {
     API.get(
@@ -75,6 +88,27 @@ function CandidateApplications() {
                   <span className="font-semibold">Match Score:</span>{" "}
                   {app.match_score}%
                 </p>
+
+                <div className="mt-6">
+                  <h3 className="font-bold mb-4">Application Timeline</h3>
+
+                  <div className="flex flex-wrap gap-3">
+                    {stages.map((stage, index) => (
+                      <div
+                        key={stage}
+                        className={`px-4 py-2 rounded-full text-sm font-medium
+
+        ${
+          index <= getStageIndex(app.status)
+            ? "bg-green-500 text-white"
+            : "bg-gray-200 text-gray-600"
+        }`}
+                      >
+                        {stage.replaceAll("_", " ")}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 <p className="mt-2">
                   <span className="font-semibold">Matched Skills:</span>{" "}

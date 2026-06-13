@@ -108,12 +108,6 @@ function CandidateDetails() {
           <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow mt-8">
-          <h2 className="text-2xl font-bold mb-4">AI Resume Summary 🤖</h2>
-
-          <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
-        </div>
-
         <div className="bg-white rounded-2xl shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4">AI Recommendation 🎯</h2>
 
@@ -161,8 +155,8 @@ function CandidateDetails() {
             Save Notes
           </button>
         </div>
-          
-            {/* scadule interview */}
+
+        {/* scadule interview */}
 
         <div className="bg-white rounded-2xl shadow p-6 mb-8">
           <h2 className="text-2xl font-bold mb-6">Interview Scheduler 🎯</h2>
@@ -310,13 +304,21 @@ function CandidateDetails() {
         </div>
 
         {/* Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Resume Score */}
           <div className="bg-white rounded-2xl shadow p-6">
             <h3 className="text-xl font-bold mb-4">Resume Score</h3>
 
             <p className="text-5xl font-bold text-blue-600">
               {candidate?.resume_score || 0}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow p-6">
+            <h3 className="text-xl font-bold mb-4">Resume Quality</h3>
+
+            <p className="text-5xl font-bold text-purple-600">
+              {candidate?.resume_quality_score || 0}
             </p>
           </div>
 

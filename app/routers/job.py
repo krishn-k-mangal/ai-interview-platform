@@ -138,6 +138,21 @@ def apply_job(
         )
 
         # AI matching
+        try:
+            semantic_result = calculate_semantic_match(
+                candidate_skills,
+                required_skills
+            )
+        except:
+            semantic_result = calculate_match(
+                candidate_skills,
+                required_skills
+            )
+        print("Candidate Skills:", candidate_skills)
+
+        print("Required Skills:", required_skills)
+
+        print("AI Result:", semantic_result)
         result = calculate_match(
 
             candidate_skills,
