@@ -113,7 +113,7 @@ function CandidateDashboard() {
 
             <DashboardCard
               title="Final Score"
-              value={profile?.overall_score || 0}
+              value={profile?.final_score || 0}
               color="purple"
             />
           </div>

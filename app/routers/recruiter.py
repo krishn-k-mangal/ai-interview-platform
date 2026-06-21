@@ -15,10 +15,21 @@ from app.models.job import Job
 
 from fastapi import HTTPException
 
+VALID_STATUSES = [
+    "APPLIED",
+    "SCREENING",
+    "SHORTLISTED",
+    "INTERVIEW_SCHEDULED",
+    "TECHNICAL_ROUND",
+    "HR_ROUND",
+    "SELECTED",
+    "REJECTED",
+]
+
 
 def verify_recruiter_access(application_id: int, recruiter_id: int, db: Session):
 
-    application = verify_recruiter_access(application_id, current_user["user_id"], db)
+    application = db.query(Application).filter(Application.id == application_id).first()
 
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
@@ -75,12 +86,11 @@ def get_candidates(
         )
 
         overall_score = round(
-            (application.match_score * 0.4)
+            (application.match_score * 0.5)
             + (getattr(profile, "skill_score", 0) * 0.3)
-            + (getattr(profile, "test_score", 0) * 0.3),
+            + (getattr(profile, "test_score", 0) * 0.2),
             2,
         )
-
         result.append(
             {
                 "application_id": application.id,
@@ -196,14 +206,39 @@ def update_status(
     application = verify_recruiter_access(application_id, current_user["user_id"], db)
 
     if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
 
-        raise HTTPException(status_code=404, detail="Application Not found")
+    status = status.upper()
+
+    if status not in VALID_STATUSES:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    current_status = application.status.upper()
+
+    # Final states cannot be changed
+    if current_status in ["SELECTED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Final status cannot be changed")
+
+    STATUS_FLOW = {
+        "APPLIED": ["SCREENING", "REJECTED"],
+        "SCREENING": ["SHORTLISTED", "REJECTED"],
+        "SHORTLISTED": ["INTERVIEW_SCHEDULED", "REJECTED"],
+        "INTERVIEW_SCHEDULED": ["TECHNICAL_ROUND", "REJECTED"],
+        "TECHNICAL_ROUND": ["HR_ROUND", "REJECTED"],
+        "HR_ROUND": ["SELECTED", "REJECTED"],
+    }
+
+    if status not in STATUS_FLOW.get(current_status, []):
+        raise HTTPException(
+            status_code=400, detail=f"Cannot move from {current_status} to {status}"
+        )
 
     application.status = status
 
     db.commit()
+    db.refresh(application)
 
-    return {"message": "Status updated successfully ✅"}
+    return {"message": "Status updated successfully ✅", "status": application.status}
 
 
 @router.get("/application/{application_id}")
@@ -252,6 +287,7 @@ def get_candidate_details(
         "resume_quality_score": getattr(profile, "resume_quality_score", 0),
         "test_score": getattr(profile, "test_score", 0),
         "resume_url": getattr(profile, "resume_url", ""),
+        "final_score": getattr(profile, "final_score", 0),
         "ai_summary": ai_summary,
         "recommendation": recommendation,
         "recruiter_notes": application.recruiter_notes,
@@ -260,6 +296,7 @@ def get_candidate_details(
         "interview_time": application.interview_time,
         "interview_mode": application.interview_mode,
         "interview_notes": application.interview_notes,
+        # "ranking_score": application.ranking_score,
     }
 
 

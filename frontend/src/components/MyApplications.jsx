@@ -1,54 +1,30 @@
 import { useEffect, useState } from "react";
-
 import API from "../api";
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateTimeline from "./CandidateTimeline";
 
 function CandidateApplications() {
   const [applications, setApplications] = useState([]);
-
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
 
-  const stages = [
-    "applied",
-    "screening",
-    "shortlisted",
-    "interview_scheduled",
-    "technical_round",
-    "hr_round",
-    "selected",
-  ];
-
-  const getStageIndex = (status) => {
-    return stages.indexOf(status);
-  };
-  // fetch candidate applications
   useEffect(() => {
-    API.get(
-      "/jobs/my-applications",
-
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    API.get("/jobs/my-applications", {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    )
-
+    })
       .then((res) => {
         setApplications(res.data);
-
         setLoading(false);
       })
-
       .catch((err) => {
         console.log(err);
-
         setLoading(false);
       });
   }, []);
 
-  // loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,8 +36,8 @@ function CandidateApplications() {
   return (
     <div className="min-h-screen bg-gray-100">
       <CandidateSidebar />
-      {/* 🔥 Navbar */}
-      <div className="ml-64 w-full p-10">
+
+      <div className="ml-64 p-10">
         <h1 className="text-4xl font-bold mb-10">My Applications 🚀</h1>
 
         {applications.length === 0 ? (
@@ -70,7 +46,7 @@ function CandidateApplications() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {applications.map((app, index) => (
+            {applications.map((app) => (
               <div
                 key={app.application_id}
                 className="bg-white rounded-xl shadow p-6"
@@ -81,7 +57,7 @@ function CandidateApplications() {
 
                 <p className="mt-4">
                   <span className="font-semibold">Status:</span>{" "}
-                  <span className="capitalize">{app.status}</span>
+                  {app.status.replaceAll("_", " ")}
                 </p>
 
                 <p className="mt-2">
@@ -92,25 +68,10 @@ function CandidateApplications() {
                 <div className="mt-6">
                   <h3 className="font-bold mb-4">Application Timeline</h3>
 
-                  <div className="flex flex-wrap gap-3">
-                    {stages.map((stage, index) => (
-                      <div
-                        key={stage}
-                        className={`px-4 py-2 rounded-full text-sm font-medium
-
-        ${
-          index <= getStageIndex(app.status)
-            ? "bg-green-500 text-white"
-            : "bg-gray-200 text-gray-600"
-        }`}
-                      >
-                        {stage.replaceAll("_", " ")}
-                      </div>
-                    ))}
-                  </div>
+                  <CandidateTimeline currentStatus={app.status} />
                 </div>
 
-                <p className="mt-2">
+                <p className="mt-6">
                   <span className="font-semibold">Matched Skills:</span>{" "}
                   {app.matched_skills || "None"}
                 </p>
@@ -119,7 +80,8 @@ function CandidateApplications() {
                   <span className="font-semibold">Missing Skills:</span>{" "}
                   {app.missing_skills || "None"}
                 </p>
-                {app.status === "interview_scheduled" && (
+
+                {app.status === "INTERVIEW_SCHEDULED" && (
                   <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
                     <h3 className="text-xl font-bold text-green-700 mb-3">
                       Interview Scheduled 🎯

@@ -4,9 +4,10 @@ from app.database.db import get_db
 from app.models.question import Question
 from app.utils.deps import require_role
 from app.models.candidate_profile import CandidateProfile
-
+from app.utils.scoring import calculate_final_score
 
 router = APIRouter(prefix="/test", tags=["Test"])
+
 
 @router.get("/questions")
 def get_questions(db: Session = Depends(get_db)):
@@ -16,11 +17,13 @@ def get_questions(db: Session = Depends(get_db)):
     result = []
 
     for q in questions:
-        result.append({
-            "id": q.id,
-            "question": q.question,
-            "options": [q.option1, q.option2, q.option3, q.option4]
-        })
+        result.append(
+            {
+                "id": q.id,
+                "question": q.question,
+                "options": [q.option1, q.option2, q.option3, q.option4],
+            }
+        )
 
     return result
 
@@ -29,9 +32,7 @@ def get_questions(db: Session = Depends(get_db)):
 def submit_test(
     answers: dict,
     current_user: dict = Depends(require_role("candidate")),
-    
-    db: Session = Depends(get_db)
-    
+    db: Session = Depends(get_db),
 ):
 
     score = 0
@@ -44,26 +45,30 @@ def submit_test(
             score += 10
 
     # get candidate profile
-    profile = db.query(CandidateProfile).filter(
-        CandidateProfile.user_id == current_user["user_id"]
-    ).first()
+    profile = (
+        db.query(CandidateProfile)
+        .filter(CandidateProfile.user_id == current_user["user_id"])
+        .first()
+    )
 
     if not profile:
         return {"error": "Upload resume first ❌"}
 
     # simple final score (for now)
-    final_score = profile.skill_score * 0.5 + score * 0.5
+    final_score = calculate_final_score(
+    profile.skill_score,
+    score,
+    profile.resume_quality_score
+)
 
-    # update DB
     profile.test_score = score
     profile.final_score = final_score
-
     db.commit()
     db.refresh(profile)
 
     return {
-    "message": "Test submitted successfully ✅",
-    "resume_score": profile.skill_score,
-    "test_score": score,
-    "final_score": final_score
+        "message": "Test submitted successfully ✅",
+        "resume_score": profile.skill_score,
+        "test_score": score,
+        "final_score": final_score,
     }

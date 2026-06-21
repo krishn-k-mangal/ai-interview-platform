@@ -12,7 +12,7 @@ class Application(Base):
 
     job_id = Column(Integer)
 
-    status = Column(String, default="applied")
+    status = Column(String, default="APPLIED")
 
     match_score = Column(Float, default=0)
 
@@ -35,3 +35,4 @@ class Application(Base):
     interview_mode = Column(String)
 
     interview_notes = Column(Text)
+    

@@ -1,0 +1,9 @@
+export const STATUS_FLOW = [
+  "APPLIED",
+  "SCREENING",
+  "SHORTLISTED",
+  "INTERVIEW_SCHEDULED",
+  "TECHNICAL_ROUND",
+  "HR_ROUND",
+  "SELECTED",
+];

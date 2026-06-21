@@ -1,46 +1,46 @@
 function StatusBadge({ status }) {
   const styles = {
-    applied: "bg-blue-100 text-blue-700",
+    APPLIED: "bg-blue-100 text-blue-700",
 
-    screening: "bg-yellow-100 text-yellow-700",
+    SCREENING: "bg-yellow-100 text-yellow-700",
 
-    shortlisted: "bg-green-100 text-green-700",
+    SHORTLISTED: "bg-green-100 text-green-700",
 
-    interview_scheduled: "bg-purple-100 text-purple-700",
+    INTERVIEW_SCHEDULED: "bg-purple-100 text-purple-700",
 
-    technical_round: "bg-indigo-100 text-indigo-700",
+    TECHNICAL_ROUND: "bg-indigo-100 text-indigo-700",
 
-    hr_round: "bg-pink-100 text-pink-700",
+    HR_ROUND: "bg-pink-100 text-pink-700",
 
-    selected: "bg-emerald-100 text-emerald-700",
+    SELECTED: "bg-emerald-100 text-emerald-700",
 
-    rejected: "bg-red-100 text-red-700",
+    REJECTED: "bg-red-100 text-red-700",
   };
 
   const labels = {
-    applied: "Applied",
+    APPLIED: "Applied",
 
-    screening: "Screening",
+    SCREENING: "Screening",
 
-    shortlisted: "Shortlisted",
+    SHORTLISTED: "Shortlisted",
 
-    interview_scheduled: "Interview Scheduled",
+    INTERVIEW_SCHEDULED: "Interview Scheduled",
 
-    technical_round: "Technical Round",
+    TECHNICAL_ROUND: "Technical Round",
 
-    hr_round: "HR Round",
+    HR_ROUND: "HR Round",
 
-    selected: "Selected",
+    SELECTED: "Selected",
 
-    rejected: "Rejected",
+    REJECTED: "Rejected",
   };
 
   return (
     <span
       className={`
-        px-3 py-1 rounded-full text-sm font-semibold
-        ${styles[status] || "bg-gray-100 text-gray-700"}
-      `}
+      px-3 py-1 rounded-full text-sm font-semibold
+      ${styles[status] || "bg-gray-100 text-gray-700"}
+    `}
     >
       {labels[status] || status}
     </span>

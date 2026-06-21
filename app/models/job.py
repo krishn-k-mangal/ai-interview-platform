@@ -21,3 +21,5 @@ class Job(Base):
     location = Column(String)
 
     recruiter_id = Column(Integer)
+    
+    # ranking_score = Column(Float, default=0)
