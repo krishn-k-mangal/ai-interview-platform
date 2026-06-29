@@ -1,13 +1,17 @@
-from fastapi import UploadFile, File, APIRouter, Depends
+from fastapi import UploadFile, File, APIRouter, Depends, HTTPException
 import os
+import json
+
+from datetime import datetime
+
+from app.services.ai_service import analyze_resume
 
 from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.models.user import User
 from app.utils.deps import require_role
 from app.models.candidate_profile import CandidateProfile
-from resume_parser import extract_text_from_pdf, extract_skills
-from app.utils.recommendation import get_recommendation_label
+from app.utils.resume_parser import extract_text_from_pdf, extract_skills
 from app.utils.scoring import calculate_final_score
 from app.utils.resume_quality import calculate_resume_quality
 
@@ -35,8 +39,6 @@ def upload_resume(
 
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
 
-    import os
-
     # save file
     upload_folder = "uploads"
     os.makedirs(upload_folder, exist_ok=True)
@@ -52,7 +54,12 @@ def upload_resume(
     text = extract_text_from_pdf(file_path)
     skills = extract_skills(text)
     resume_quality_score = calculate_resume_quality(text, skills)
-
+    # AI Resume Analysis
+    analysis = analyze_resume(
+        resume_text=text,
+        skills=skills,
+        resume_quality_score=resume_quality_score,
+    )
     skill_score = min(len(skills) * 10, 100)
 
     # 🔥 SAVE TO DB (THIS IS YOUR ANSWER)
@@ -64,8 +71,6 @@ def upload_resume(
         .first()
     )
     if profile and profile.resume_path:
-
-        import os
 
         if os.path.exists(profile.resume_path):
             os.remove(profile.resume_path)
@@ -86,6 +91,17 @@ def upload_resume(
 
         profile.resume_quality_score = resume_quality_score
 
+        profile.ai_summary = analysis["summary"]
+
+        profile.ai_strengths = json.dumps(analysis["strengths"])
+
+        profile.ai_weaknesses = json.dumps(analysis["weaknesses"])
+
+        profile.ai_missing_sections = json.dumps(analysis["missing_sections"])
+
+        profile.ai_suggestions = json.dumps(analysis["suggestions"])
+
+        profile.ai_last_updated = datetime.utcnow()
     # create new profile
     else:
 
@@ -98,6 +114,12 @@ def upload_resume(
             final_score=calculate_final_score(skill_score, 0, resume_quality_score),
             status="applied",
             resume_quality_score=resume_quality_score,
+            ai_summary=analysis["summary"],
+            ai_strengths=json.dumps(analysis["strengths"]),
+            ai_weaknesses=json.dumps(analysis["weaknesses"]),
+            ai_missing_sections=json.dumps(analysis["missing_sections"]),
+            ai_suggestions=json.dumps(analysis["suggestions"]),
+            ai_last_updated=datetime.utcnow(),
         )
 
         db.add(profile)

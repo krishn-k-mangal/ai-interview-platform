@@ -6,11 +6,12 @@ from app.models.candidate_profile import CandidateProfile
 from app.models.question import Question
 from app.routers import auth, candidate, recruiter, test, job
 from dotenv import load_dotenv
+from app.routers import ai
 import os
 
 
 load_dotenv()
-print("FRONTEND_URL =", os.getenv("FRONTEND_URL"))
+# print("FRONTEND_URL =", os.getenv("FRONTEND_URL"))
 
 app = FastAPI()
 
@@ -32,3 +33,4 @@ app.include_router(candidate.router)
 app.include_router(recruiter.router)
 app.include_router(test.router)
 app.include_router(job.router)
+app.include_router(ai.router)

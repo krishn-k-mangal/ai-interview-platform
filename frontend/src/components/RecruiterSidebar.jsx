@@ -39,6 +39,11 @@ function RecruiterSidebar() {
             Analytics
           </button>
         </Link>
+        <Link to="/add-question">
+          <button className="w-full bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded">
+            Add Question
+          </button>
+        </Link>
         <Button text="Logout" color="red" onClick={handleLogout} />
       </div>
     </div>
