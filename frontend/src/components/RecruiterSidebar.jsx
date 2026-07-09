@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import Button from "./Button";
 import { useNavigate } from "react-router-dom";
 
-
 function RecruiterSidebar() {
   const navigate = useNavigate();
   const handleLogout = () => {
@@ -42,6 +41,11 @@ function RecruiterSidebar() {
         <Link to="/add-question">
           <button className="w-full bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded">
             Add Question
+          </button>
+        </Link>
+        <Link to="/recruiter/ai-assistant">
+          <button className="w-full bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded">
+            🤖 AI Hiring Assistant
           </button>
         </Link>
         <Button text="Logout" color="red" onClick={handleLogout} />

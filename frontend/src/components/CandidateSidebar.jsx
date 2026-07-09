@@ -32,11 +32,7 @@ function CandidateSidebar() {
           </button>
         </Link> */}
 
-        <Link to="/test">
-          <button className="w-full bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded">
-            Aptitude Test
-          </button>
-        </Link>
+      
 
         <button
           onClick={() => {

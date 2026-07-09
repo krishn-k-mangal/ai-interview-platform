@@ -10,6 +10,7 @@ from app.models.job import Job
 from app.models.candidate_profile import CandidateProfile
 from app.models.interview_question import InterviewQuestion
 import json
+from app.models.application import Application
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -109,4 +110,123 @@ def create_interview_kit(
         "question_count": len(result["questions"]),
         "recommendation": kit.hiring_recommendation,
         "confidence": kit.confidence_score,
+    }
+
+
+@router.get("/interview-kit/{application_id}")
+def get_interview_kit(
+    application_id: int,
+    current_user: dict = Depends(require_role("recruiter")),
+    db: Session = Depends(get_db),
+):
+    application = verify_recruiter_access(
+        application_id,
+        current_user["user_id"],
+        db,
+    )
+
+    if not application:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found",
+        )
+
+    kit = (
+        db.query(InterviewKit)
+        .filter(
+            InterviewKit.application_id == application_id,
+            InterviewKit.active == True,
+        )
+        .first()
+    )
+
+    if not kit:
+        raise HTTPException(
+            status_code=404,
+            detail="Interview Kit not found",
+        )
+
+    questions = (
+        db.query(InterviewQuestion)
+        .filter(InterviewQuestion.application_id == application_id)
+        .all()
+    )
+
+    return {
+        "candidate_summary": kit.candidate_summary,
+        "strengths": json.loads(kit.strengths),
+        "weaknesses": json.loads(kit.weaknesses),
+        "focus_areas": json.loads(kit.focus_areas),
+        "red_flags": json.loads(kit.red_flags),
+        "recommendation": kit.hiring_recommendation,
+        "confidence": kit.confidence_score,
+        "questions": [
+            {
+                "skill": q.skill,
+                "difficulty": q.difficulty,
+                "question": q.question,
+            }
+            for q in questions
+        ],
+    }
+
+
+@router.get("/candidate/interview-kit/{application_id}")
+def get_candidate_interview_kit(
+    application_id: int,
+    current_user: dict = Depends(require_role("candidate")),
+    db: Session = Depends(get_db),
+):
+    application = (
+        db.query(Application)
+        .filter(
+            Application.id == application_id,
+            Application.candidate_id == current_user["user_id"],
+        )
+        .first()
+    )
+
+    if not application:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found",
+        )
+
+    kit = (
+        db.query(InterviewKit)
+        .filter(
+            InterviewKit.application_id == application_id,
+            InterviewKit.active == True,
+        )
+        .first()
+    )
+
+    if not kit:
+        raise HTTPException(
+            status_code=404,
+            detail="Interview Kit not found",
+        )
+
+    questions = (
+        db.query(InterviewQuestion)
+        .filter(InterviewQuestion.application_id == application_id)
+        .all()
+    )
+
+    return {
+        "candidate_summary": kit.candidate_summary,
+        "strengths": json.loads(kit.strengths),
+        "weaknesses": json.loads(kit.weaknesses),
+        "focus_areas": json.loads(kit.focus_areas),
+        "red_flags": json.loads(kit.red_flags),
+        "recommendation": kit.hiring_recommendation,
+        "confidence": kit.confidence_score,
+        "questions": [
+            {
+                "skill": q.skill,
+                "difficulty": q.difficulty,
+                "question": q.question,
+            }
+            for q in questions
+        ],
     }

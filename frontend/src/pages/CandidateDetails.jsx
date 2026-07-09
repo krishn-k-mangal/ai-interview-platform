@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate} from "react-router-dom";
 
 import API from "../api";
 
-import RecruiterSidebar from "./RecruiterSidebar";
+import RecruiterSidebar from "../components/RecruiterSidebar";
 
-import Loader from "./Loader";
+import Loader from "../components/Loader";
 
-import MatchProgress from "./MatchProgress";
+import MatchProgress from "../components/MatchProgress";
 
-import SkillBadge from "./SkillBadge";
+import SkillBadge from "../components/SkillBadge";
 
-import StatusBadge from "./StatusBadge";
+import StatusBadge from "../components/StatusBadge";
 
 function CandidateDetails() {
   const token = localStorage.getItem("token");
@@ -70,10 +70,13 @@ function CandidateDetails() {
       });
   }, []);
 
+  const navigate = useNavigate();
+
   // loading
   if (loading) {
     return <Loader text="Loading candidate..." />;
   }
+  
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -365,6 +368,13 @@ function CandidateDetails() {
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl"
           >
             View Resume
+          </button>
+
+          <button
+            onClick={() => navigate(`/recruiter/candidate-analysis/${applicationId}`)}
+            className="ml-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
+          >
+            🧠 Analyze Candidate
           </button>
         </div>
       </div>

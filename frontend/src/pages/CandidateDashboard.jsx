@@ -3,8 +3,9 @@ import toast from "react-hot-toast";
 import API from "../api";
 
 import { Link, useNavigate } from "react-router-dom";
-import DashboardCard from "./DashboardCard";
-import CandidateSidebar from "./CandidateSidebar";
+import CandidateSidebar from "../components/CandidateSidebar";
+import DashboardCard from "../components/DashboardCard";
+
 function CandidateDashboard() {
   const [profile, setProfile] = useState(null);
 
@@ -15,50 +16,55 @@ function CandidateDashboard() {
   const navigate = useNavigate();
 
   // 🔥 Fetch profile
+
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+
+      const res = await API.get("/candidate/my-profile");
+
+      setProfile(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    API.get("/candidate/my-profile", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => {
-        setProfile(res.data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    fetchProfile();
   }, []);
 
   // 🔥 Upload Resume
+  const [resumeAnalysis, setResumeAnalysis] = useState(null);
+
   const handleUpload = async () => {
     if (!file) {
-      toast.error("Select a file first ❌");
-
+      toast.error("Select a file first");
       return;
     }
 
     const formData = new FormData();
-
     formData.append("file", file);
 
     try {
-      await API.post(
-        "/candidate/upload-resume",
-        formData,
-
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      const res = await API.post("/candidate/upload-resume", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
-      toast.error("Resume uploaded successfully");
-      window.location.reload();
+      // Save resume analysis response
+      setResumeAnalysis(res.data);
+
+      // Refresh dashboard data
+      await fetchProfile();
+
+      toast.success("Resume uploaded successfully");
     } catch (err) {
-      console.log(err);
-
+      console.error(err);
       toast.error("Upload failed");
     }
   };
@@ -104,18 +110,6 @@ function CandidateDashboard() {
               value={profile?.resume_score || 0}
               color="blue"
             />
-
-            <DashboardCard
-              title="Test Score"
-              value={profile?.test_score || 0}
-              color="green"
-            />
-
-            <DashboardCard
-              title="Final Score"
-              value={profile?.final_score || 0}
-              color="purple"
-            />
           </div>
 
           {/* 🔥 Actions */}
@@ -140,20 +134,37 @@ function CandidateDashboard() {
               </button>
             </div>
 
-            {/* Test Section */}
-            <div className="bg-white rounded-xl shadow p-8">
-              <h2 className="text-2xl font-bold mb-5">Aptitude Test 🧠</h2>
+            {resumeAnalysis && (
+              <div className="bg-white rounded-lg shadow p-4 mt-6">
+                <h2 className="text-xl font-semibold mb-4">Resume Analysis</h2>
 
-              <p className="text-gray-600 mb-6">
-                Complete your aptitude test to improve your hiring score.
-              </p>
+                <div className="mb-3">
+                  <strong>Skill Score:</strong> {resumeAnalysis.skill_score}
+                </div>
 
-              <Link to="/test">
-                <button className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded">
-                  Start Test
-                </button>
-              </Link>
-            </div>
+                <div className="mb-3">
+                  <strong>Resume Quality Score:</strong>{" "}
+                  {resumeAnalysis.resume_quality_score}
+                </div>
+
+                <div>
+                  <strong>Detected Skills</strong>
+
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {resumeAnalysis.skills?.map((skill) => (
+                      <span
+                        key={skill}
+                        className="bg-blue-100 px-3 py-1 rounded-full text-sm"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          
             <Link to="/candidate-jobs">
               <button className="bg-purple-500 text-white px-6 py-3 rounded">
                 Browse Jobs

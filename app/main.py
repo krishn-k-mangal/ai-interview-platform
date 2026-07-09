@@ -7,7 +7,10 @@ from app.models.question import Question
 from app.routers import auth, candidate, recruiter, test, job
 from dotenv import load_dotenv
 from app.routers import ai
+from app.models.chat_history import ChatHistory
 import os
+from app.routers import ai_chat
+
 
 
 load_dotenv()
@@ -34,3 +37,4 @@ app.include_router(recruiter.router)
 app.include_router(test.router)
 app.include_router(job.router)
 app.include_router(ai.router)
+app.include_router(ai_chat.router)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 function TestPage() {
@@ -10,17 +10,21 @@ function TestPage() {
 
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  const { applicationId } = useParams();
 
   // 🔥 Fetch Questions
   useEffect(() => {
-    API.get("/test/questions")
+    if (!applicationId) return;
+
+    API.get(`/test/questions/${applicationId}`)
       .then((res) => {
         setQuestions(res.data);
       })
       .catch((err) => {
         console.log(err);
+        toast.error("Failed to load questions");
       });
-  }, []);
+  }, [applicationId]);
 
   // 🔥 Select Answer
   const handleOption = (questionId, option) => {
@@ -33,18 +37,17 @@ function TestPage() {
   // 🔥 Submit Test
   const handleSubmit = async () => {
     try {
-      const res = await API.post("/test/submit-test", answers, {
+      const res = await API.post(`/test/submit-test/${applicationId}`, answers, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      navigate("/candidate-dashboard");;
+      navigate("/candidate-dashboard");
     } catch (err) {
       console.log(err);
 
-      
-      toast.success("Submission failed");
+      toast.error("Submission failed");
     }
   };
 

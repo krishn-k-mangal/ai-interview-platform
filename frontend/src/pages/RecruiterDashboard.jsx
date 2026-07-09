@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import API from "../api";
 
-import Loader from "./Loader";
-import EmptyState from "./EmptyState";
-import PageHeader from "./PageHeader";
-import DashboardCard from "./DashboardCard";
-import RecruiterSidebar from "./RecruiterSidebar";
-import CandidateRow from "./CandidateRow";
+import Loader from "../components/Loader";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
+import DashboardCard from "../components/DashboardCard";
+import RecruiterSidebar from "../components/RecruiterSidebar";
+import CandidateRow from "../components/CandidateRow";
 
 function RecruiterDashboard() {
   const [candidates, setCandidates] = useState([]);

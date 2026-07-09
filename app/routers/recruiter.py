@@ -45,7 +45,26 @@ def verify_recruiter_access(application_id: int, recruiter_id: int, db: Session)
     return application
 
 
+def verify_question_access(
+    question_id: int,
+    recruiter_id: int,
+    db: Session,
+):
+    question = db.query(Question).filter(Question.id == question_id).first()
+
+    if not question:
+        raise HTTPException(404, "Question not found")
+
+    job = db.query(Job).filter(Job.id == question.job_id).first()
+
+    if not job or job.recruiter_id != recruiter_id:
+        raise HTTPException(403, "Unauthorized")
+
+    return question
+
+
 class QuestionCreate(BaseModel):
+    job_id: int
 
     question: str
 
@@ -88,7 +107,7 @@ def get_candidates(
         overall_score = round(
             (application.match_score * 0.5)
             + (getattr(profile, "skill_score", 0) * 0.3)
-            + (getattr(profile, "test_score", 0) * 0.2),
+            + (application.test_score * 0.2),
             2,
         )
         result.append(
@@ -98,7 +117,7 @@ def get_candidates(
                 "name": user.name,
                 "email": user.email,
                 "resume_score": getattr(profile, "skill_score", 0),
-                "test_score": getattr(profile, "test_score", 0),
+                "test_score": application.test_score,
                 "overall_score": overall_score,
                 "status": application.status,
                 "match_score": application.match_score,
@@ -117,8 +136,20 @@ def add_question(
     current_user: dict = Depends(require_role("recruiter")),
     db: Session = Depends(get_db),
 ):
+    job = (
+        db.query(Job)
+        .filter(
+            Job.id == data.job_id,
+            Job.recruiter_id == current_user["user_id"],
+        )
+        .first()
+    )
+
+    if not job:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
     new_question = Question(
+        job_id=data.job_id,
         question=data.question,
         option1=data.option1,
         option2=data.option2,
@@ -143,12 +174,11 @@ def delete_question(
     db: Session = Depends(get_db),
 ):
 
-    question = db.query(Question).filter(Question.id == question_id).first()
-
-    if not question:
-
-        raise HTTPException(status_code=404, detail="Not found")
-
+    question = verify_question_access(
+        question_id,
+        current_user["user_id"],
+        db,
+    )
     db.delete(question)
 
     db.commit()
@@ -156,13 +186,14 @@ def delete_question(
     return {"message": "Question deleted successfully ✅"}
 
 
-@router.get("/all-questions")
+@router.get("/all-questions/{job_id}")
 def get_all_questions(
+    job_id: int,
     current_user: dict = Depends(require_role("recruiter")),
     db: Session = Depends(get_db),
 ):
 
-    questions = db.query(Question).all()
+    questions = db.query(Question).filter(Question.job_id == job_id).all()
 
     return questions
 
@@ -175,11 +206,11 @@ def edit_question(
     db: Session = Depends(get_db),
 ):
 
-    question = db.query(Question).filter(Question.id == question_id).first()
-
-    if not question:
-
-        raise HTTPException(status_code=404, detail="Not found")
+    question = verify_question_access(
+        question_id,
+        current_user["user_id"],
+        db,
+    )
 
     question.question = data.question
 
@@ -285,9 +316,10 @@ def get_candidate_details(
         "status": application.status,
         "resume_score": getattr(profile, "skill_score", 0),
         "resume_quality_score": getattr(profile, "resume_quality_score", 0),
-        "test_score": getattr(profile, "test_score", 0),
+        "test_score": application.test_score,
+        "final_score": application.final_score,
+        "test_completed": application.test_completed,
         "resume_url": getattr(profile, "resume_url", ""),
-        "final_score": getattr(profile, "final_score", 0),
         "ai_summary": ai_summary,
         "recommendation": recommendation,
         "recruiter_notes": application.recruiter_notes,

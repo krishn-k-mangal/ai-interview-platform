@@ -8,10 +8,11 @@ from app.models.application import Application
 from app.models.user import User
 from app.models.candidate_profile import CandidateProfile
 from app.utils.matching import calculate_match
+from app.utils.semantic_match import calculate_semantic_match
 from app.schemas.job import JobCreate
 from app.utils.ai_summary import generate_resume_summary
 from app.utils.recommendation import get_recommendation_label
-from app.utils.ranking import calculate_ranking_score
+from app.models.interview_kit import InterviewKit
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -99,18 +100,15 @@ def apply_job(
         # AI matching
         try:
             semantic_result = calculate_semantic_match(
-                candidate_skills, required_skills
+                candidate_skills,
+                required_skills,
             )
-        except:
-            semantic_result = calculate_match(candidate_skills, required_skills)
-        print("Candidate Skills:", candidate_skills)
-
-        print("Required Skills:", required_skills)
-
-        print("AI Result:", semantic_result)
+        except Exception:
+            semantic_result = calculate_match(
+                candidate_skills,
+                required_skills,
+            )
         result = semantic_result
-
-        candidate_score = profile.final_score
 
         recommendation = get_recommendation_label(result["match_score"])
 
@@ -120,22 +118,18 @@ def apply_job(
         application = Application(
             candidate_id=current_user["user_id"],
             job_id=job_id,
-            match_score=result["match_score"],
+            match_score=float(result["match_score"]),
             matched_skills=", ".join(result["matched_skills"]),
             missing_skills=", ".join(result["missing_skills"]),
             extra_skills=", ".join(result["extra_skills"]),
             ai_summary=summary,
-  
             recommendation=recommendation,
         )
-
         db.add(application)
 
         db.commit()
 
         db.refresh(application)
-
-        print("✅ APPLICATION SAVED:", application.id)
 
         return {"message": "Applied successfully ✅", "application_id": application.id}
 
@@ -198,7 +192,7 @@ def get_job_applicants(
                 "name": user.name,
                 "email": user.email,
                 "resume_score": getattr(profile, "skill_score", 0),
-                "test_score": getattr(profile, "test_score", 0),
+                "test_score": app.test_score,
                 "status": app.status,
                 "match_score": app.match_score,
                 "matched_skills": app.matched_skills,
@@ -219,8 +213,11 @@ def update_notes(
     db: Session = Depends(get_db),
 ):
 
-    application = db.query(Application).filter(Application.id == application_id).first()
-
+    application = verify_recruiter_access(
+        application_id,
+        current_user["user_id"],
+        db,
+    )
     if not application:
 
         return {"message": "Application not found ❌"}
@@ -240,19 +237,30 @@ def schedule_interview(
     db: Session = Depends(get_db),
 ):
 
-    application = db.query(Application).filter(Application.id == application_id).first()
-
+    application = verify_recruiter_access(
+        application_id,
+        current_user["user_id"],
+        db,
+    )
     if not application:
         return {"message": "Application not found ❌"}
-    print("APPLICATION ID:", application_id)
-    print("DATA:", data)
+
+    if not data["interview_date"]:
+        raise HTTPException(status_code=400, detail="Interview date is required")
+
+    if not data["interview_time"]:
+        raise HTTPException(status_code=400, detail="Interview time is required")
+
+    if not data["interview_mode"]:
+        raise HTTPException(status_code=400, detail="Interview mode is required")
+
     application.interview_date = data["interview_date"]
 
     application.interview_time = data["interview_time"]
 
     application.meeting_link = data["meeting_link"]
 
-    application.status = "interview_scheduled"
+    application.status = "INTERVIEW_SCHEDULED"
     # print("SAVING...")
     application.interview_mode = data["interview_mode"]
 
@@ -275,27 +283,27 @@ def recruiter_analytics(
 
     applications = db.query(Application).filter(Application.job_id.in_(job_ids)).all()
 
-    applied = len([a for a in applications if a.status == "applied"])
+    applied = len([a for a in applications if a.status == "APPLIED"])
 
-    screening = len([a for a in applications if a.status == "screening"])
+    screening = len([a for a in applications if a.status == "SCREENING"])
 
     interview_scheduled = len(
-        [a for a in applications if a.status == "interview_scheduled"]
+        [a for a in applications if a.status == "INTERVIEW_SCHEDULED"]
     )
 
-    technical_round = len([a for a in applications if a.status == "technical_round"])
+    technical_round = len([a for a in applications if a.status == "TECHNICAL_ROUND"])
 
-    hr_round = len([a for a in applications if a.status == "hr_round"])
+    hr_round = len([a for a in applications if a.status == "HR_ROUND"])
 
     total_jobs = len(jobs)
 
     total_applicants = len(applications)
 
-    shortlisted = len([a for a in applications if a.status == "shortlisted"])
+    shortlisted = len([a for a in applications if a.status == "SHORTLISTED"])
 
-    rejected = len([a for a in applications if a.status == "rejected"])
+    rejected = len([a for a in applications if a.status == "REJECTED"])
 
-    selected = len([a for a in applications if a.status == "selected"])
+    selected = len([a for a in applications if a.status == "SELECTED"])
 
     avg_match = 0
 
@@ -338,6 +346,21 @@ def my_applications(
 
         job = db.query(Job).filter(Job.id == app.job_id).first()
 
+        profile = (
+            db.query(CandidateProfile)
+            .filter(CandidateProfile.user_id == app.candidate_id)
+            .first()
+        )
+
+        kit = (
+            db.query(InterviewKit)
+            .filter(
+                InterviewKit.application_id == app.id,
+                InterviewKit.active == True,
+            )
+            .first()
+        )
+
         result.append(
             {
                 "application_id": app.id,
@@ -347,15 +370,19 @@ def my_applications(
                 "match_score": app.match_score,
                 "matched_skills": app.matched_skills,
                 "missing_skills": app.missing_skills,
+                "test_score": app.test_score,
+                "final_score": app.final_score,
+                "test_completed": app.test_completed,
                 "interview_date": app.interview_date,
                 "interview_time": app.interview_time,
                 "meeting_link": app.meeting_link,
                 "interview_mode": app.interview_mode,
                 "interview_notes": app.interview_notes,
-                # "recommendation": app.recommendation,
+                "interview_kit_generated": kit is not None,
+                "resume_score": profile.skill_score if profile else 0,
+                "resume_quality_score": profile.resume_quality_score if profile else 0,
             }
         )
-    print(result)
 
     return result
 

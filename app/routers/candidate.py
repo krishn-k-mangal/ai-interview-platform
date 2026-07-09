@@ -35,7 +35,7 @@ def upload_resume(
     db: Session = Depends(get_db),
 ):
 
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith(".pdf"):
 
         raise HTTPException(status_code=400, detail="Only PDF files allowed")
 
@@ -83,9 +83,7 @@ def upload_resume(
 
         profile.skill_score = skill_score
 
-        profile.final_score = calculate_final_score(
-            skill_score, getattr(profile, "test_score", 0), resume_quality_score
-        )
+        # Don't calculate final_score here anymore.
 
         profile.skills = ", ".join(skills)
 

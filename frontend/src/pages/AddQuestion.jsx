@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import Modal from "./Model";
+import Modal from "../components/Model";
 
 import API from "../api";
 
-
-import RecruiterSidebar from "./RecruiterSidebar";
+import RecruiterSidebar from "../components/RecruiterSidebar";
 
 function AddQuestion() {
   const token = localStorage.getItem("token");
@@ -24,9 +23,13 @@ function AddQuestion() {
 
   const [selectedQuestionId, setSelectedQuestionId] = useState(null);
 
+  const [jobs, setJobs] = useState([]);
+  const [selectedJob, setSelectedJob] = useState("");
+
   // 🔥 Add Question
   const handleAddQuestion = async () => {
     if (
+      !selectedJob ||
       !question ||
       !option1 ||
       !option2 ||
@@ -43,6 +46,7 @@ function AddQuestion() {
         "/recruiter/add-question",
 
         {
+          job_id: Number(selectedJob),
           question,
           option1,
           option2,
@@ -78,28 +82,43 @@ function AddQuestion() {
     }
   };
 
-  const fetchQuestions = async () => {
-    try {
-      const res = await API.get(
-        "/recruiter/all-questions",
+  const fetchQuestions = async (jobId) => {
+    if (!jobId) {
+      setQuestions([]);
+      return;
+    }
 
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+    try {
+      const res = await API.get(`/recruiter/all-questions/${jobId}`);
 
       setQuestions(res.data);
+      console.log("Selected Job:", jobId);
+      console.log("Questions:", res.data);
     } catch (err) {
       console.log(err);
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      const res = await API.get("/jobs/my-jobs");
+      setJobs(res.data);
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to load jobs");
+    }
+  };
+
   useEffect(() => {
+    fetchJobs();
     fetchQuestions();
   }, []);
 
+  useEffect(() => {
+    if (selectedJob) {
+      fetchQuestions(selectedJob);
+    }
+  }, [selectedJob]);
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* 🔥 Sidebar */}
@@ -114,6 +133,24 @@ function AddQuestion() {
           <p className="text-gray-600 mt-2">
             Create aptitude and technical questions for candidates
           </p>
+        </div>
+
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Select Job</label>
+
+          <select
+            value={selectedJob}
+            onChange={(e) => setSelectedJob(e.target.value)}
+            className="w-full border rounded-lg p-3"
+          >
+            <option value="">Choose a Job</option>
+
+            {jobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.title}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* 🔥 Form Card */}
@@ -251,28 +288,32 @@ function AddQuestion() {
           )}
           <h2 className="text-2xl font-bold mb-5">All Questions</h2>
 
-          {questions.map((q) => (
-            <div key={q.id} className="bg-white shadow rounded p-5 mb-4">
-              <h3 className="font-bold text-lg">{q.question}</h3>
+          {selectedJob ? (
+            questions.map((q) => (
+              <div key={q.id} className="bg-white shadow rounded p-5 mb-4">
+                
+                <h3 className="font-bold text-lg">{q.question}</h3>
 
-              <p className="text-gray-600 mt-2">
-                Correct Answer: {q.correct_answer}
-              </p>
+                <p className="text-gray-600 mt-2">
+                  Correct Answer: {q.correct_answer}
+                </p>
 
-              <button
-                onClick={() => {
-                  setSelectedQuestionId(q.id);
-
-                  setShowModal(true);
-
-                  fetchQuestions();
-                }}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mt-4"
-              >
-                Delete
-              </button>
+                <button
+                  onClick={() => {
+                    setSelectedQuestionId(q.id);
+                    setShowModal(true);
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mt-4"
+                >
+                  Delete
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 text-gray-500">
+              Select a job to view its questions.
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
