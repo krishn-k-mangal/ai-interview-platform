@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../api";
 import CandidateSidebar from "../components/CandidateSidebar";
+import Loader from "../components/Loader";
+import StatusBadge from "../components/StatusBadge";
+import Button from "../components/Button";
 
 function TestResult() {
   const { application_id } = useParams();

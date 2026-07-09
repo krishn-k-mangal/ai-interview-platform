@@ -40,7 +40,7 @@ function RecruiterSidebar() {
         </Link>
         <Link to="/add-question">
           <button className="w-full bg-gray-800 hover:bg-gray-700 px-4 py-3 rounded">
-            Add Question
+            📝 Manage Questions
           </button>
         </Link>
         <Link to="/recruiter/ai-assistant">

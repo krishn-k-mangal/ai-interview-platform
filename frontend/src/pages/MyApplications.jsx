@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import API from "../api";
 
 import CandidateTimeline from "../components/CandidateTimeline";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CandidateSidebar from "../components/CandidateSidebar";
+import Loader from "../components/Loader";
+import EmptyState from "../components/EmptyState";
+import StatusBadge from "../components/StatusBadge";
+import Button from "../components/Button";
 
 function CandidateApplications() {
   const navigate = useNavigate();
@@ -23,18 +27,13 @@ function CandidateApplications() {
         setApplications(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.log(err);
+      .catch(() => {
         setLoading(false);
       });
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <h1 className="text-2xl font-bold">Loading applications...</h1>
-      </div>
-    );
+    return <Loader text="Loading applications..." />;
   }
 
   return (
@@ -45,15 +44,10 @@ function CandidateApplications() {
         <h1 className="text-4xl font-bold mb-10">My Applications 🚀</h1>
 
         {applications.length === 0 ? (
-          <div className="bg-white p-10 rounded-xl shadow text-center">
-            <h2 className="text-2xl font-semibold">No applications yet 🚫</h2>
-          </div>
+          <EmptyState text="No applications yet 🚫" />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {applications.map((app) => {
-              console.log("Application ID:", app.application_id);
-
-              return (
+            {applications.map((app) => (
                 <div
                   key={app.application_id}
                   className="bg-white rounded-xl shadow p-6"
@@ -63,20 +57,7 @@ function CandidateApplications() {
                   <p className="text-gray-600 mt-2">📍 {app.location}</p>
 
                   <div className="mt-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold
-                        ${
-                          app.status === "SELECTED"
-                            ? "bg-green-100 text-green-700"
-                            : app.status === "REJECTED"
-                              ? "bg-red-100 text-red-700"
-                              : app.status === "INTERVIEW_SCHEDULED"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-yellow-100 text-yellow-700"
-                        }`}
-                    >
-                      {app.status.replaceAll("_", " ")}
-                    </span>
+                    <StatusBadge status={app.status} />
                   </div>
 
                   <p className="mt-2">
@@ -205,26 +186,23 @@ function CandidateApplications() {
                         ❌ Application Rejected
                       </button>
                     ) : app.test_completed ? (
-                      <button
+                      <Button
+                        text="📊 View Result"
+                        color="green"
                         onClick={() =>
                           navigate(`/test-result/${app.application_id}`)
                         }
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                      >
-                        📊 View Result
-                      </button>
+                      />
                     ) : (
-                      <button
+                      <Button
+                        text="📝 Take Aptitude Test"
+                        color="blue"
                         onClick={() => navigate(`/test/${app.application_id}`)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                      >
-                        📝 Take Aptitude Test
-                      </button>
+                      />
                     )}
                   </div>
                 </div>
-              );
-            })}
+            ))}
           </div>
         )}
       </div>
