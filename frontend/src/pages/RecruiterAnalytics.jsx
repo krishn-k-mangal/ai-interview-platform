@@ -117,24 +117,6 @@ function RecruiterAnalytics() {
             </p>
           </div>
 
-          {/* Total Applicants */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h2 className="text-xl font-semibold">Total Applicants</h2>
-
-            <p className="text-4xl font-bold mt-4 text-green-500">
-              {analytics.total_applicants || 0}
-            </p>
-          </div>
-
-          {/* Avg Match */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h2 className="text-xl font-semibold">Avg Match Score</h2>
-
-            <p className="text-4xl font-bold mt-4 text-purple-500">
-              {analytics.avg_match_score || 0}%
-            </p>
-          </div>
-
           {/* Shortlisted */}
           <div className="bg-white p-6 rounded-xl shadow">
             <h2 className="text-xl font-semibold">Shortlisted</h2>
@@ -144,23 +126,6 @@ function RecruiterAnalytics() {
             </p>
           </div>
 
-          {/* Selected */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h2 className="text-xl font-semibold">Selected</h2>
-
-            <p className="text-4xl font-bold mt-4 text-green-600">
-              {analytics.selected || 0}
-            </p>
-          </div>
-
-          {/* Rejected */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h2 className="text-xl font-semibold">Rejected</h2>
-
-            <p className="text-4xl font-bold mt-4 text-red-500">
-              {analytics.rejected || 0}
-            </p>
-          </div>
           <div className="bg-white p-6 rounded-xl shadow">
             <h2 className="text-xl font-semibold">Applied</h2>
             <p className="text-4xl font-bold mt-4">{analytics.applied || 0}</p>

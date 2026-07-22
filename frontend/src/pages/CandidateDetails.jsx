@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useParams, useNavigate} from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import API from "../api";
 
@@ -76,7 +76,6 @@ function CandidateDetails() {
   if (loading) {
     return <Loader text="Loading candidate..." />;
   }
-  
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -92,6 +91,7 @@ function CandidateDetails() {
             <div>
               <h1 className="text-4xl font-bold">{candidate?.name}</h1>
               <p className="text-gray-500 mt-2">{candidate?.email}</p>
+
               <div className="mt-4">
                 <StatusBadge status={candidate?.status} />
               </div>
@@ -101,21 +101,6 @@ function CandidateDetails() {
             <div className="w-full md:w-72">
               <MatchProgress score={candidate?.match_score || 0} />
             </div>
-          </div>
-        </div>
-
-        {/* AI Summary */}
-        <div className="bg-white rounded-2xl shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">AI Summary 🤖</h2>
-
-          <p className="text-gray-700 leading-7">{candidate?.ai_summary}</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">AI Recommendation 🎯</h2>
-
-          <div className="inline-block bg-blue-100 text-blue-700 px-5 py-3 rounded-full font-semibold">
-            {candidate?.recommendation}
           </div>
         </div>
 
@@ -371,7 +356,9 @@ function CandidateDetails() {
           </button>
 
           <button
-            onClick={() => navigate(`/recruiter/candidate-analysis/${applicationId}`)}
+            onClick={() =>
+              navigate(`/recruiter/candidate-analysis/${applicationId}`)
+            }
             className="ml-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
           >
             🧠 Analyze Candidate
