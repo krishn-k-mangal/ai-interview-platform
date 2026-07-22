@@ -1,29 +1,62 @@
+# =========================
 # Python
+# =========================
 venv/
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
 
-# Node
-node_modules/
+# Database
+*.db
+*.sqlite3
 
 # Environment Variables
 .env
+.env.*
+!.env.example
 
-# Uploads
-uploads/
+# Logs
+*.log
+
+# =========================
+# Node
+# =========================
+node_modules/
+frontend/node_modules/
 
 # Build Files
 dist/
 build/
+frontend/dist/
 
-# VS Code
+# =========================
+# Uploads
+# =========================
+uploads/
+
+# =========================
+# IDE
+# =========================
 .vscode/
+.idea/
 
+# =========================
 # OS Files
+# =========================
 .DS_Store
 Thumbs.db
 
-/uploads
+# =========================
+# Python Tool Cache
+# =========================
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-*.db
+# =========================
+# Misc
+# =========================
+*.swp
